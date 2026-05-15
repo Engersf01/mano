@@ -74,7 +74,9 @@ export function useHandTracking({ enabled, videoRef }: Options) {
         return;
       }
       const t = performance.now();
-      if (t - lastSentRef.current < 33) {
+      // Aim for 60fps; the worker's busy flag drops frames it can't service,
+      // which gives us as-fast-as-possible inference without overrunning.
+      if (t - lastSentRef.current < 14) {
         rafRef.current = requestAnimationFrame(pump);
         return;
       }

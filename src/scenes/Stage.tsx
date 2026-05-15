@@ -58,11 +58,11 @@ function CameraRig() {
   }, [mode, zoom, index, deck]);
 
   useFrame(() => {
-    camera.position.lerp(target.current, 0.06);
+    camera.position.lerp(target.current, 0.22);
     const cur = new THREE.Vector3();
     camera.getWorldDirection(cur);
     const desired = lookAt.current.clone().sub(camera.position).normalize();
-    cur.lerp(desired, 0.12);
+    cur.lerp(desired, 0.32);
     const look = camera.position.clone().add(cur.multiplyScalar(5));
     camera.lookAt(look);
   });

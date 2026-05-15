@@ -57,7 +57,7 @@ export type GestureSettings = {
 export const DEFAULT_SETTINGS: GestureSettings = {
   swipeSpeed: 1.0,
   pinchDistance: 0.06,
-  cooldownMs: 600,
+  cooldownMs: 350,
   confidenceFloor: 0.45,
   deadZone: 0.12,
   enabled: true,

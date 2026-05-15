@@ -8,7 +8,7 @@ export function detectSwipe(ctx: DetectorContext) {
   if (!primary || !isOpenPalm(primary)) return;
   if (now - lastFire < settings.cooldownMs) return;
 
-  const window = 220;
+  const window = 180;
   const old = history.find((s) => now - s.t < window && s.primary);
   if (!old || !old.primary) return;
 

@@ -40,7 +40,7 @@ export function Slide3D({
     const t = state.clock.elapsedTime;
     group.current.position.y = baseY + (active ? 0 : Math.sin(t * 0.6 + seed) * 0.04);
     const target = active ? scale * 1.15 : scale;
-    group.current.scale.lerp(new THREE.Vector3(target, target, target), 0.08);
+    group.current.scale.lerp(new THREE.Vector3(target, target, target), 0.2);
   });
 
   return (
