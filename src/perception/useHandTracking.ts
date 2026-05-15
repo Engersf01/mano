@@ -82,15 +82,23 @@ export function useHandTracking({ enabled, videoRef }: Options) {
       }
       lastSentRef.current = t;
       try {
-        const bitmap = await createImageBitmap(video);
+        // Pre-resize the camera frame to ~384px on the long edge before sending
+        // to the worker. MediaPipe rescales internally to its model resolution
+        // (~256px) anyway, and the copy cost of a full 1280x720 bitmap was
+        // the main thread bottleneck — most visible when both hands appear.
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        const long = Math.max(vw, vh);
+        const scale = long > 384 ? 384 / long : 1;
+        const rw = Math.max(1, Math.round(vw * scale));
+        const rh = Math.max(1, Math.round(vh * scale));
+        const bitmap = await createImageBitmap(video, {
+          resizeWidth: rw,
+          resizeHeight: rh,
+          resizeQuality: "low",
+        });
         worker.postMessage(
-          {
-            type: "frame",
-            bitmap,
-            t,
-            width: video.videoWidth,
-            height: video.videoHeight,
-          },
+          { type: "frame", bitmap, t, width: rw, height: rh },
           [bitmap],
         );
       } catch {
