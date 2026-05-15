@@ -38,7 +38,7 @@ export function detectPinch(ctx: DetectorContext) {
         data: { x: center.x, y: center.y, ratio, durationMs },
       });
       // A brief pinch + release is treated as an "air-tap" (Vision-Pro style click).
-      if (durationMs < 260) {
+      if (durationMs < 500) {
         ctx.emit({
           name: "air-tap",
           phase: "active",

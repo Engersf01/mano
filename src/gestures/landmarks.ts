@@ -115,7 +115,9 @@ export const isOpenPalm = (h: Hand) => {
 
 export const isFist = (h: Hand) => {
   const s = fingerStates(h);
-  return !s.index && !s.middle && !s.ring && !s.pinky;
+  // At most one long finger may be slightly extended (real-world fists vary).
+  const extended = [s.index, s.middle, s.ring, s.pinky].filter(Boolean).length;
+  return extended <= 1;
 };
 
 export const isPointing = (h: Hand) => {

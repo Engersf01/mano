@@ -52,11 +52,11 @@ const STEPS: Step[] = [
   },
   {
     key: "tap",
-    title: "Air-tap to drop",
+    title: "Grab and drop",
     body:
-      "Two ways — pick whichever feels natural. (A) Briefly touch your thumb and index together and release quickly, like a tiny click. (B) Or point with your index finger and quickly thrust it forward toward the camera.",
-    targets: ["air-tap"],
-    cue: "Quick pinch-and-release · OR · point and thrust forward",
+      "The simplest interaction in Mano: make a fist, then open your hand. Like grabbing something invisible in the air and letting it go. A quick pinch-and-release works too.",
+    targets: ["air-tap", "grab", "release", "double-pinch"],
+    cue: "Close your fist · then open your hand",
   },
 ];
 

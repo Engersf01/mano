@@ -40,6 +40,7 @@ function handleEvent(e: GestureEvent) {
         scene.setZoomDepth(e.data.scale);
       break;
     case "air-tap":
+    case "release":
       if (tools.active === "sticky" && e.data) {
         const slide = deck.deck?.slides[deck.index];
         ann.addSticky({
