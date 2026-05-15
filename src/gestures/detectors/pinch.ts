@@ -29,13 +29,24 @@ export function detectPinch(ctx: DetectorContext) {
       st.s = "idle";
       const heldSince = st.since;
       const justEnded = ctx.now;
+      const durationMs = justEnded - heldSince;
       ctx.emit({
         name: "pinch",
         phase: "end",
         confidence: 0.9,
         hand: key,
-        data: { x: center.x, y: center.y, ratio, durationMs: justEnded - heldSince },
+        data: { x: center.x, y: center.y, ratio, durationMs },
       });
+      // A brief pinch + release is treated as an "air-tap" (Vision-Pro style click).
+      if (durationMs < 260) {
+        ctx.emit({
+          name: "air-tap",
+          phase: "active",
+          confidence: 0.9,
+          hand: key,
+          data: { x: center.x, y: center.y, durationMs },
+        });
+      }
       if (justEnded - st.lastEnd < DOUBLE_MS) {
         ctx.emit({
           name: "double-pinch",

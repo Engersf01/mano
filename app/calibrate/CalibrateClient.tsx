@@ -54,9 +54,9 @@ const STEPS: Step[] = [
     key: "tap",
     title: "Air-tap to drop",
     body:
-      "Point with just your index finger and quickly thrust it forward toward the camera.",
-    targets: ["air-tap", "point"],
-    cue: "Point and tap forward",
+      "Two ways — pick whichever feels natural. (A) Briefly touch your thumb and index together and release quickly, like a tiny click. (B) Or point with your index finger and quickly thrust it forward toward the camera.",
+    targets: ["air-tap"],
+    cue: "Quick pinch-and-release · OR · point and thrust forward",
   },
 ];
 

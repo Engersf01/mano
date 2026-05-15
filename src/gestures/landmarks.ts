@@ -62,9 +62,9 @@ function fingerExtended(
   const pipAngle = angleAt(a, b, c);
   const dipAngle = angleAt(b, c, d);
   const wrist = h.landmarks[L.WRIST];
-  const tipFar = dist(wrist, d) >= dist(wrist, b) * 0.95;
-  // Straight: angle near π. Curled: angle drops below ~2.0 rad (≈115°).
-  return pipAngle > 2.0 && dipAngle > 2.0 && tipFar;
+  const tipFar = dist(wrist, d) >= dist(wrist, b) * 0.9;
+  // Straight: angle near π. Curled: angle drops below ~1.7 rad (≈97°).
+  return pipAngle > 1.7 && dipAngle > 1.7 && tipFar;
 }
 
 function thumbExtended(h: Hand): boolean {
@@ -108,7 +108,9 @@ export function fingerStates(h: Hand): FingerStates {
 
 export const isOpenPalm = (h: Hand) => {
   const s = fingerStates(h);
-  return s.index && s.middle && s.ring && s.pinky;
+  // Accept "mostly open" — at least 3 of 4 long fingers extended.
+  const open = [s.index, s.middle, s.ring, s.pinky].filter(Boolean).length;
+  return open >= 3;
 };
 
 export const isFist = (h: Hand) => {
@@ -118,7 +120,8 @@ export const isFist = (h: Hand) => {
 
 export const isPointing = (h: Hand) => {
   const s = fingerStates(h);
-  return s.index && !s.middle && !s.ring && !s.pinky;
+  // Index extended, middle clearly curled. Ring/pinky don't need to be perfect.
+  return s.index && !s.middle;
 };
 
 export const palmCenter = (h: Hand): Landmark => {

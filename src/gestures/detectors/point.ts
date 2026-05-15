@@ -3,8 +3,13 @@ import { isPointing, L } from "../landmarks";
 
 const zHistory = new Map<string, number[]>();
 const lastTap = new Map<string, number>();
-const Z_WINDOW = 5;
-const Z_THRESHOLD = 0.022;
+const Z_WINDOW = 7;
+const Z_THRESHOLD = 0.014;
+
+function smooth(arr: number[]): number {
+  // Simple moving average for noisy MediaPipe z.
+  return arr.reduce((s, v) => s + v, 0) / arr.length;
+}
 
 export function detectPointAndTap(ctx: DetectorContext) {
   for (const hand of [ctx.primary, ctx.secondary]) {
@@ -27,14 +32,15 @@ export function detectPointAndTap(ctx: DetectorContext) {
     if (arr.length > Z_WINDOW) arr.shift();
     zHistory.set(key, arr);
     if (arr.length < Z_WINDOW) continue;
-    const oldest = arr[0];
+    const oldestAvg = smooth(arr.slice(0, 3));
+    const newestAvg = smooth(arr.slice(-3));
     const last = lastTap.get(key) ?? 0;
-    if (oldest - tip.z > Z_THRESHOLD && ctx.now - last > 700) {
+    if (oldestAvg - newestAvg > Z_THRESHOLD && ctx.now - last > 600) {
       lastTap.set(key, ctx.now);
       ctx.emit({
         name: "air-tap",
         phase: "active",
-        confidence: 0.8,
+        confidence: 0.75,
         hand: key,
         data: { x: tip.x, y: tip.y },
       });
