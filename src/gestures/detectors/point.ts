@@ -1,13 +1,18 @@
 import type { DetectorContext } from "../types";
 import { isPointing, L } from "../landmarks";
 
-const lastZ = new Map<string, number>();
+const zHistory = new Map<string, number[]>();
 const lastTap = new Map<string, number>();
+const Z_WINDOW = 5;
+const Z_THRESHOLD = 0.022;
 
 export function detectPointAndTap(ctx: DetectorContext) {
   for (const hand of [ctx.primary, ctx.secondary]) {
     if (!hand) continue;
-    if (!isPointing(hand)) continue;
+    if (!isPointing(hand)) {
+      zHistory.delete(hand.handedness);
+      continue;
+    }
     const tip = hand.landmarks[L.INDEX_TIP];
     const key = hand.handedness;
     ctx.emit({
@@ -17,12 +22,14 @@ export function detectPointAndTap(ctx: DetectorContext) {
       hand: key,
       data: { x: tip.x, y: tip.y, z: tip.z },
     });
-    const prevZ = lastZ.get(key);
-    lastZ.set(key, tip.z);
-    if (prevZ === undefined) continue;
-    const dz = tip.z - prevZ;
-    const lastT = lastTap.get(key) ?? 0;
-    if (dz < -0.04 && ctx.now - lastT > 600) {
+    const arr = zHistory.get(key) ?? [];
+    arr.push(tip.z);
+    if (arr.length > Z_WINDOW) arr.shift();
+    zHistory.set(key, arr);
+    if (arr.length < Z_WINDOW) continue;
+    const oldest = arr[0];
+    const last = lastTap.get(key) ?? 0;
+    if (oldest - tip.z > Z_THRESHOLD && ctx.now - last > 700) {
       lastTap.set(key, ctx.now);
       ctx.emit({
         name: "air-tap",

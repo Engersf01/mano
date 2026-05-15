@@ -89,7 +89,7 @@ export function AnnotationCanvas() {
       if (tools.active === "laser") {
         const p = useGestureStore.getState().pointer;
         if (p.active) {
-          const x = (1 - p.x) * w;
+          const x = p.x * w;
           const y = p.y * h;
           const grad = ctx.createRadialGradient(x, y, 0, x, y, 40 * devicePixelRatio);
           grad.addColorStop(0, "rgba(255,80,80,0.95)");
@@ -114,7 +114,7 @@ export function AnnotationCanvas() {
       if (!slide) return;
       if (!["pen", "marker", "highlight"].includes(tool)) return;
       if (e.name === "pinch" && e.data) {
-        const x = 1 - e.data.x;
+        const x = e.data.x;
         const y = e.data.y;
         if (e.phase === "start") {
           const id = useAnnotationStore.getState().beginStroke({

@@ -43,7 +43,6 @@ export function useHandTracking({ enabled, videoRef }: Options) {
 
     let frames = 0;
     let fpsT = performance.now();
-    let lastT: number | null = null;
 
     const onFrame = (frame: HandFrame) => {
       frames++;
@@ -53,8 +52,17 @@ export function useHandTracking({ enabled, videoRef }: Options) {
         frames = 0;
         fpsT = now;
       }
-      setHands(frame);
-      engine.tick(frame);
+      // Mirror landmarks to match the visually-mirrored camera feed so that
+      // all downstream code speaks user-perspective coordinates.
+      const mirrored: HandFrame = {
+        ...frame,
+        hands: frame.hands.map((h) => ({
+          ...h,
+          landmarks: h.landmarks.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z })),
+        })),
+      };
+      setHands(mirrored);
+      engine.tick(mirrored);
     };
 
     worker.postMessage({ type: "init", wasmBase: WASM_BASE });
@@ -83,7 +91,6 @@ export function useHandTracking({ enabled, videoRef }: Options) {
           },
           [bitmap],
         );
-        lastT = t;
       } catch {
         // video frame not yet available
       }

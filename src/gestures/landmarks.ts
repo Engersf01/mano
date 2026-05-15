@@ -2,12 +2,25 @@ import type { Hand, Landmark } from "@/perception/types";
 
 export const L = {
   WRIST: 0,
+  THUMB_CMC: 1,
+  THUMB_MCP: 2,
+  THUMB_IP: 3,
   THUMB_TIP: 4,
   INDEX_MCP: 5,
+  INDEX_PIP: 6,
+  INDEX_DIP: 7,
   INDEX_TIP: 8,
   MIDDLE_MCP: 9,
+  MIDDLE_PIP: 10,
+  MIDDLE_DIP: 11,
   MIDDLE_TIP: 12,
+  RING_MCP: 13,
+  RING_PIP: 14,
+  RING_DIP: 15,
   RING_TIP: 16,
+  PINKY_MCP: 17,
+  PINKY_PIP: 18,
+  PINKY_DIP: 19,
   PINKY_TIP: 20,
 } as const;
 
@@ -17,45 +30,102 @@ export const dist = (a: Landmark, b: Landmark) =>
 export const dist3 = (a: Landmark, b: Landmark) =>
   Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 
-export const pinchDistance = (h: Hand) =>
-  dist(h.landmarks[L.THUMB_TIP], h.landmarks[L.INDEX_TIP]);
-
 export const handSize = (h: Hand) =>
   dist(h.landmarks[L.WRIST], h.landmarks[L.MIDDLE_MCP]);
 
-export const fingerCurl = (h: Hand): { i: number; m: number; r: number; p: number } => {
-  const w = h.landmarks[L.WRIST];
-  const ref = handSize(h) || 1;
-  const measure = (tip: number, mcp: number) =>
-    dist(h.landmarks[mcp], h.landmarks[tip]) / ref;
-  return {
-    i: measure(L.INDEX_TIP, L.INDEX_MCP),
-    m: measure(L.MIDDLE_TIP, L.MIDDLE_MCP),
-    r: measure(L.RING_TIP, 13),
-    p: measure(L.PINKY_TIP, 17),
-  };
+export const pinchDistance = (h: Hand) =>
+  dist(h.landmarks[L.THUMB_TIP], h.landmarks[L.INDEX_TIP]);
+
+function angleAt(a: Landmark, b: Landmark, c: Landmark): number {
+  const v1x = a.x - b.x;
+  const v1y = a.y - b.y;
+  const v2x = c.x - b.x;
+  const v2y = c.y - b.y;
+  const n1 = Math.hypot(v1x, v1y);
+  const n2 = Math.hypot(v2x, v2y);
+  if (n1 < 1e-6 || n2 < 1e-6) return 0;
+  const cos = (v1x * v2x + v1y * v2y) / (n1 * n2);
+  return Math.acos(Math.max(-1, Math.min(1, cos)));
+}
+
+function fingerExtended(
+  h: Hand,
+  mcp: number,
+  pip: number,
+  dip: number,
+  tip: number,
+): boolean {
+  const a = h.landmarks[mcp];
+  const b = h.landmarks[pip];
+  const c = h.landmarks[dip];
+  const d = h.landmarks[tip];
+  const pipAngle = angleAt(a, b, c);
+  const dipAngle = angleAt(b, c, d);
+  const wrist = h.landmarks[L.WRIST];
+  const tipFar = dist(wrist, d) >= dist(wrist, b) * 0.95;
+  // Straight: angle near π. Curled: angle drops below ~2.0 rad (≈115°).
+  return pipAngle > 2.0 && dipAngle > 2.0 && tipFar;
+}
+
+function thumbExtended(h: Hand): boolean {
+  const cmc = h.landmarks[L.THUMB_CMC];
+  const mcp = h.landmarks[L.THUMB_MCP];
+  const ip = h.landmarks[L.THUMB_IP];
+  const tip = h.landmarks[L.THUMB_TIP];
+  const a1 = angleAt(cmc, mcp, ip);
+  const a2 = angleAt(mcp, ip, tip);
+  const wrist = h.landmarks[L.WRIST];
+  const indexMcp = h.landmarks[L.INDEX_MCP];
+  const palm = dist(wrist, indexMcp) || 1;
+  const tipAway = dist(indexMcp, tip) > palm * 0.6;
+  return a1 > 2.6 && a2 > 2.6 && tipAway;
+}
+
+export type FingerStates = {
+  thumb: boolean;
+  index: boolean;
+  middle: boolean;
+  ring: boolean;
+  pinky: boolean;
+  extendedCount: number;
 };
 
-export const isPointing = (h: Hand) => {
-  const c = fingerCurl(h);
-  return c.i > 1.4 && c.m < 1.05 && c.r < 1.05 && c.p < 1.1;
-};
+export function fingerStates(h: Hand): FingerStates {
+  const index = fingerExtended(h, L.INDEX_MCP, L.INDEX_PIP, L.INDEX_DIP, L.INDEX_TIP);
+  const middle = fingerExtended(h, L.MIDDLE_MCP, L.MIDDLE_PIP, L.MIDDLE_DIP, L.MIDDLE_TIP);
+  const ring = fingerExtended(h, L.RING_MCP, L.RING_PIP, L.RING_DIP, L.RING_TIP);
+  const pinky = fingerExtended(h, L.PINKY_MCP, L.PINKY_PIP, L.PINKY_DIP, L.PINKY_TIP);
+  const thumb = thumbExtended(h);
+  return {
+    thumb,
+    index,
+    middle,
+    ring,
+    pinky,
+    extendedCount: [thumb, index, middle, ring, pinky].filter(Boolean).length,
+  };
+}
 
 export const isOpenPalm = (h: Hand) => {
-  const c = fingerCurl(h);
-  return c.i > 1.4 && c.m > 1.4 && c.r > 1.3 && c.p > 1.2;
+  const s = fingerStates(h);
+  return s.index && s.middle && s.ring && s.pinky;
 };
 
 export const isFist = (h: Hand) => {
-  const c = fingerCurl(h);
-  return c.i < 1.1 && c.m < 1.1 && c.r < 1.1 && c.p < 1.15;
+  const s = fingerStates(h);
+  return !s.index && !s.middle && !s.ring && !s.pinky;
+};
+
+export const isPointing = (h: Hand) => {
+  const s = fingerStates(h);
+  return s.index && !s.middle && !s.ring && !s.pinky;
 };
 
 export const palmCenter = (h: Hand): Landmark => {
   const a = h.landmarks[L.WRIST];
   const b = h.landmarks[L.INDEX_MCP];
   const c = h.landmarks[L.MIDDLE_MCP];
-  const d = h.landmarks[17]; // pinky MCP
+  const d = h.landmarks[L.PINKY_MCP];
   return {
     x: (a.x + b.x + c.x + d.x) / 4,
     y: (a.y + b.y + c.y + d.y) / 4,

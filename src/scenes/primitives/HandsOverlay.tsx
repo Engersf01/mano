@@ -11,7 +11,7 @@ const CONNECTIONS: [number, number][] = [
   [0, 17],
 ];
 
-export function HandsOverlay({ mirror = true }: { mirror?: boolean }) {
+export function HandsOverlay({ mirror = false }: { mirror?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     let raf: number;

@@ -62,7 +62,7 @@ export function CameraTile() {
           autoPlay
           className="absolute inset-0 h-full w-full -scale-x-100 object-cover"
         />
-        {showHands && <HandsOverlay mirror />}
+        {showHands && <HandsOverlay />}
         <div className="absolute left-2 top-2 flex items-center gap-1.5 rounded-full bg-ink-950/70 px-2 py-1 text-[10px] uppercase tracking-wider">
           <span
             className={
