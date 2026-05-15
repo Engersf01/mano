@@ -21,6 +21,7 @@ export function PresenterPanel() {
 
   if (!deck) return null;
   const slide = deck.slides[index];
+  if (!slide) return null;
   const elapsed = startedAt ? Date.now() - startedAt : 0;
   const remaining = Math.max(0, goal - elapsed);
   const overtime = elapsed > goal;

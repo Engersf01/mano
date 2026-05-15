@@ -28,11 +28,24 @@ export function useHandTracking({ enabled, videoRef }: Options) {
     const engine = new GestureEngine();
     engineRef.current = engine;
 
-    const worker = new Worker(
-      new URL("./hands.worker.ts", import.meta.url),
-      { type: "module" },
-    );
+    let worker: Worker;
+    try {
+      worker = new Worker(
+        new URL("./hands.worker.ts", import.meta.url),
+        { type: "module" },
+      );
+    } catch (err) {
+      setError(
+        "Hand-tracking worker could not start: " +
+          (err instanceof Error ? err.message : String(err)),
+      );
+      return;
+    }
     workerRef.current = worker;
+
+    worker.onerror = (e) => {
+      setError(`Worker error: ${e.message || "unknown"}`);
+    };
 
     worker.onmessage = (e: MessageEvent<WorkerOutbound>) => {
       const msg = e.data;
