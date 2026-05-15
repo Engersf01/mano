@@ -10,6 +10,7 @@ import { AnnotationCanvas } from "@/ui/tools/AnnotationCanvas";
 import { StickyLayer } from "@/ui/tools/StickyLayer";
 import { RadialMenu } from "@/ui/overlays/RadialMenu";
 import { Captions } from "@/ui/overlays/Captions";
+import { ErrorBoundary } from "@/ui/ErrorBoundary";
 import { useDeckStore } from "@/store/deck";
 import { sampleDeck } from "@/data/sampleDeck";
 import { useGestureIntents } from "@/gestures/intents";
@@ -23,17 +24,19 @@ export default function PresentClient() {
   useGestureIntents();
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-ink-950">
-      <Stage />
-      <AnnotationCanvas />
-      <StickyLayer />
-      <Captions />
-      <PresenterPanel />
-      <CameraTile />
-      <AIPanel />
-      <Toolbox />
-      <ControlDock />
-      <RadialMenu />
-    </div>
+    <ErrorBoundary>
+      <div className="relative h-screen w-screen overflow-hidden bg-ink-950">
+        <Stage />
+        <AnnotationCanvas />
+        <StickyLayer />
+        <Captions />
+        <PresenterPanel />
+        <CameraTile />
+        <AIPanel />
+        <Toolbox />
+        <ControlDock />
+        <RadialMenu />
+      </div>
+    </ErrorBoundary>
   );
 }
