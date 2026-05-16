@@ -14,9 +14,9 @@ import {
   Sparkles,
   Hand,
   MonitorPlay,
-  Eye,
-  EyeOff,
+  LayoutGrid,
 } from "lucide-react";
+import { useToolsStore } from "@/store/tools";
 import { cn } from "@/lib/utils";
 
 const MODES: { key: SceneMode; label: string }[] = [
@@ -43,6 +43,8 @@ export function ControlDock() {
   const fps = useGestureStore((s) => s.fps);
   const ready = useGestureStore((s) => s.ready);
   const toggleAi = useAIStore((s) => s.toggle);
+  const setRadial = useToolsStore((s) => s.setRadial);
+  const showRadial = useToolsStore((s) => s.showRadial);
   const [openAudience, setOpenAudience] = useState(false);
 
   useEffect(() => {
@@ -103,6 +105,18 @@ export function ControlDock() {
           </button>
         ))}
         <div className="mx-1 h-7 w-px self-center bg-white/10" />
+        <button
+          onClick={() => setRadial(!showRadial)}
+          title="Open tools menu (or draw a circle gesture)"
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-xl",
+            showRadial
+              ? "bg-aurora-violet/15 text-aurora-violet"
+              : "text-ink-200 hover:bg-white/5 hover:text-white",
+          )}
+        >
+          <LayoutGrid size={16} />
+        </button>
         <button
           onClick={toggleHands}
           title={showHands ? "Hide hand overlay" : "Show hand overlay"}

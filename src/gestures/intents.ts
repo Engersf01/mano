@@ -20,15 +20,18 @@ function handleEvent(e: GestureEvent) {
   const tools = useToolsStore.getState();
   const ann = useAnnotationStore.getState();
 
+  // Swipes always dismiss the radial first, then navigate. This way an
+  // accidentally-opened menu doesn't block the deck.
+  if ((e.name === "swipe-right" || e.name === "swipe-left") && tools.showRadial) {
+    tools.setRadial(false);
+  }
+
   switch (e.name) {
     case "swipe-right":
       deck.next();
       break;
     case "swipe-left":
       deck.prev();
-      break;
-    case "open-palm":
-      tools.setRadial(true);
       break;
     case "double-pinch": {
       const slide = deck.deck?.slides[deck.index];
@@ -61,5 +64,8 @@ function handleEvent(e: GestureEvent) {
     case "flick-down":
       tools.toggleToolbox();
       break;
+    // Note: 'open-palm' is intentionally not mapped to anything. A resting
+    // open hand fires it every 2s and would constantly re-trigger whatever
+    // it's bound to. Use the circle gesture or the dock button instead.
   }
 }
