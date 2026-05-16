@@ -1,12 +1,16 @@
 "use client";
 import { useDeckStore } from "@/store/deck";
-import { useAnnotationStore } from "@/store/annotation";
+import { useAnnotationStore, type StickyNote } from "@/store/annotation";
 import { useEffect, useRef, useState } from "react";
+
+// Stable empty array reference so the selector doesn't return a new []
+// on every call — that would fail Object.is and infinite-loop the render.
+const NO_STICKIES: StickyNote[] = [];
 
 export function StickyLayer() {
   const slide = useDeckStore((s) => s.deck?.slides[s.index]);
   const stickies = useAnnotationStore((s) =>
-    slide ? s.layers[slide.id]?.stickies ?? [] : [],
+    slide ? s.layers[slide.id]?.stickies ?? NO_STICKIES : NO_STICKIES,
   );
   if (!slide) return null;
   return (
