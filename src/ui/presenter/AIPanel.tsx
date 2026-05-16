@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Mic, MicOff, Send, Sparkles, X, Languages } from "lucide-react";
 import { useAIStore, type AssistantMessage } from "@/store/ai";
@@ -29,9 +29,11 @@ export function AIPanel() {
   const slide = useDeckStore((s) => s.deck?.slides[s.index]);
   const setMode = useSceneStore((s) => s.setMode);
   const [input, setInput] = useState("");
+  const introPushed = useRef(false);
 
   useEffect(() => {
-    if (!open || messages.length) return;
+    if (!open || introPushed.current) return;
+    introPushed.current = true;
     push({
       id: "intro",
       role: "assistant",
@@ -39,7 +41,7 @@ export function AIPanel() {
         "Hi — I’m your stage assistant. Ask me to switch modes, summarize the current slide, draft a sticky note, or coach your pace.",
       t: Date.now(),
     });
-  }, [open, messages.length, push]);
+  }, [open, push]);
 
   const send = async () => {
     const text = input.trim();

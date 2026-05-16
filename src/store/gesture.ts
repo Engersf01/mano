@@ -30,6 +30,18 @@ type Actions = {
   setSettings: (s: Partial<GestureSettings>) => void;
 };
 
+// Names whose 'active' phase fires every frame and would flood React state
+// updates if forwarded to lastEvent on every emit.
+const CONTINUOUS = new Set([
+  "point",
+  "pinch",
+  "grab",
+  "two-hand-zoom",
+  "two-hand-rotate",
+]);
+
+let lastEventAt = 0;
+
 export const useGestureStore = create<State & Actions>()(
   subscribeWithSelector((set, get) => ({
     ready: false,
@@ -47,7 +59,13 @@ export const useGestureStore = create<State & Actions>()(
     setSettings: (s) =>
       set((st) => ({ settings: { ...st.settings, ...s } })),
     dispatch: (e) => {
-      set({ lastEvent: e });
+      // Always forward to imperative listeners (intents, annotation drawing).
+      // These run without React re-renders.
+      const ls = get().listeners;
+      ls.forEach((l) => l(e));
+
+      // pointer updates feed the laser-cursor render; throttling them would
+      // make the cursor stutter, so they bypass the lastEvent throttle.
       if (e.name === "point" && e.data) {
         set({
           pointer: {
@@ -58,8 +76,21 @@ export const useGestureStore = create<State & Actions>()(
           },
         });
       }
-      const ls = get().listeners;
-      ls.forEach((l) => l(e));
+
+      // Only push to lastEvent (a React-subscribed value) for discrete
+      // gesture moments — and at most every 100ms — so we don't flood
+      // React's per-tick update budget.
+      const isContinuousActive =
+        CONTINUOUS.has(e.name) && e.phase === "active";
+      if (!isContinuousActive) {
+        set({ lastEvent: e });
+        lastEventAt = e.t;
+        return;
+      }
+      if (e.t - lastEventAt > 100) {
+        set({ lastEvent: e });
+        lastEventAt = e.t;
+      }
     },
     on: (l) => {
       get().listeners.add(l);
