@@ -30,12 +30,15 @@ export function BrainMode() {
   }, [deck]);
 
   const edges = useMemo(() => {
-    const lines: [THREE.Vector3, THREE.Vector3][] = [];
+    const lines: { id: string; geo: THREE.BufferGeometry }[] = [];
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const a = new THREE.Vector3(...nodes[i].pos);
         const b = new THREE.Vector3(...nodes[j].pos);
-        if (a.distanceTo(b) < 5.5) lines.push([a, b]);
+        if (a.distanceTo(b) < 5.5) {
+          const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
+          lines.push({ id: `${i}-${j}`, geo });
+        }
       }
     }
     return lines;
@@ -50,15 +53,12 @@ export function BrainMode() {
   return (
     <group ref={group}>
       <Starfield count={600} />
-      {edges.map(([a, b], i) => {
-        const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
-        return (
-          <line key={i}>
-            <primitive object={geo} attach="geometry" />
-            <lineBasicMaterial color="#60f5ff" opacity={0.18} transparent />
-          </line>
-        );
-      })}
+      {edges.map((e) => (
+        <line key={e.id}>
+          <primitive object={e.geo} attach="geometry" />
+          <lineBasicMaterial color="#60f5ff" opacity={0.18} transparent />
+        </line>
+      ))}
       {nodes.map((n, i) => (
         <Slide3D
           key={n.slide.id}
