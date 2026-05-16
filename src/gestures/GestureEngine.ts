@@ -30,9 +30,9 @@ export class GestureEngine {
     const smoothed: Landmark[] = h.landmarks.map((p, i) => {
       let f = perHand!.get(i);
       if (!f) {
-        // Higher minCutoff + beta = lower lag on fast motion.
-        // 1.6 / 0.18 keeps jitter low at rest, near-zero lag on swipes.
-        f = new Vec2OneEuro(1.6, 0.18, 1.0);
+        // High beta = very responsive to motion (low lag), minCutoff stays
+        // moderate to keep the resting cursor stable.
+        f = new Vec2OneEuro(1.5, 0.4, 1.0);
         perHand!.set(i, f);
       }
       const xy = f.filter({ x: p.x, y: p.y }, t);

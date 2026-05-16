@@ -3,8 +3,9 @@ import { L, isPointing } from "../landmarks";
 
 const samples = new Map<string, { x: number; y: number; t: number }[]>();
 const lastFire = new Map<string, number>();
-const WINDOW = 900;
+const WINDOW = 600;
 const MIN_RADIUS = 0.04;
+const COOLDOWN = 800;
 
 export function detectCircle(ctx: DetectorContext) {
   for (const hand of [ctx.primary, ctx.secondary]) {
@@ -33,7 +34,7 @@ export function detectCircle(ctx: DetectorContext) {
     }
     const radius = rs / arr.length;
     const last = lastFire.get(key) ?? 0;
-    if (Math.abs(totalAng) > 2 * Math.PI * 0.85 && radius > MIN_RADIUS && ctx.now - last > 1200) {
+    if (Math.abs(totalAng) > 2 * Math.PI * 0.85 && radius > MIN_RADIUS && ctx.now - last > COOLDOWN) {
       lastFire.set(key, ctx.now);
       ctx.emit({
         name: "circle",

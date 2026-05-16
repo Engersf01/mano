@@ -30,7 +30,7 @@ type Item = {
   action: () => void;
 };
 
-const DWELL_MS = 650;
+const DWELL_MS = 1000;
 const MIN_RADIUS_PX = 60;
 const MENU_RADIUS_PX = 170;
 
