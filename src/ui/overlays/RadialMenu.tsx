@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, type MouseEvent as ReactMouseEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToolsStore, type ToolName } from "@/store/tools";
 import { useSceneStore } from "@/store/scene";
@@ -76,7 +76,7 @@ export function RadialMenu() {
               return (
                 <motion.button
                   key={item.key}
-                  onClick={(e) => {
+                  onClick={(e: ReactMouseEvent) => {
                     e.stopPropagation();
                     item.action();
                   }}
