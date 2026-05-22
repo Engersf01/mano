@@ -3,13 +3,8 @@ import {
   FilesetResolver,
   GestureRecognizer,
 } from "@mediapipe/tasks-vision";
+import { MODEL_URL, WASM_BASE } from "./config";
 import type { WorkerInbound, WorkerOutbound } from "./types";
-
-// Pin to the installed tasks-vision version so the WASM matches the JS API.
-const VISION_VERSION = "0.10.14";
-const WASM_BASE = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VISION_VERSION}/wasm`;
-const MODEL_URL =
-  "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task";
 
 let recognizer: GestureRecognizer | null = null;
 
