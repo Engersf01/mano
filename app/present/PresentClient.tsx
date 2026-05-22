@@ -8,8 +8,8 @@ import { AIPanel } from "@/ui/presenter/AIPanel";
 import { Toolbox } from "@/ui/tools/Toolbox";
 import { AnnotationCanvas } from "@/ui/tools/AnnotationCanvas";
 import { StickyLayer } from "@/ui/tools/StickyLayer";
-import { RadialMenu } from "@/ui/overlays/RadialMenu";
 import { Captions } from "@/ui/overlays/Captions";
+import { GestureGuide } from "@/ui/presenter/GestureGuide";
 import { ErrorBoundary } from "@/ui/ErrorBoundary";
 import { useDeckStore } from "@/store/deck";
 import { sampleDeck } from "@/data/sampleDeck";
@@ -35,7 +35,7 @@ export default function PresentClient() {
         <AIPanel />
         <Toolbox />
         <ControlDock />
-        <RadialMenu />
+        <GestureGuide />
       </div>
     </ErrorBoundary>
   );

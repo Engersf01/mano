@@ -4,16 +4,16 @@ import { palmCenter, isOpenPalm } from "../landmarks";
 let lastFire = 0;
 
 export function detectSwipe(ctx: DetectorContext) {
-  const { primary, history, settings, now, emit } = ctx;
-  if (!primary || !isOpenPalm(primary)) return;
+  const { rightHand, history, settings, now, emit } = ctx;
+  if (!rightHand || !isOpenPalm(rightHand)) return;
   if (now - lastFire < settings.cooldownMs) return;
 
   const window = 180;
-  const old = history.find((s) => now - s.t < window && s.primary);
-  if (!old || !old.primary) return;
+  const old = history.find((s) => now - s.t < window && s.rightHand);
+  if (!old || !old.rightHand) return;
 
-  const a = palmCenter(old.primary);
-  const b = palmCenter(primary);
+  const a = palmCenter(old.rightHand);
+  const b = palmCenter(rightHand);
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const dt = Math.max((now - old.t) / 1000, 0.05);
@@ -32,7 +32,7 @@ export function detectSwipe(ctx: DetectorContext) {
     name,
     phase: "active",
     confidence: conf,
-    hand: primary.handedness,
+    hand: "Right",
     data: { vx, vy },
   };
   emit(evt);

@@ -13,7 +13,8 @@ export type GestureName =
   | "two-hand-rotate"
   | "open-palm"
   | "circle"
-  | "flick-down";
+  | "flick-down"
+  | "mode-select";
 
 export type GesturePhase = "start" | "active" | "end";
 
@@ -31,14 +32,14 @@ export type GestureListener = (e: GestureEvent) => void;
 export type HandSnapshot = {
   t: number;
   frame: HandFrame;
-  primary: Hand | null;
-  secondary: Hand | null;
+  rightHand: Hand | null;
+  leftHand: Hand | null;
 };
 
 export type DetectorContext = {
   frame: HandFrame;
-  primary: Hand | null;
-  secondary: Hand | null;
+  rightHand: Hand | null;
+  leftHand: Hand | null;
   history: HandSnapshot[];
   emit: (e: Omit<GestureEvent, "t">) => void;
   now: number;

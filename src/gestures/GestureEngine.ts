@@ -12,8 +12,7 @@ import { detectPinch } from "./detectors/pinch";
 import { detectPointAndTap } from "./detectors/point";
 import { detectGrab } from "./detectors/grab";
 import { detectTwoHand } from "./detectors/twoHand";
-import { detectOpenPalm } from "./detectors/openPalm";
-import { detectCircle } from "./detectors/circle";
+import { detectFingerCount } from "./detectors/fingerCount";
 
 const HISTORY = 24;
 
@@ -46,20 +45,20 @@ export class GestureEngine {
     if (!settings.enabled) return;
 
     const smoothed = frame.hands.map((h) => this.smooth(h, frame.t));
-    let primary: Hand | null = null;
-    let secondary: Hand | null = null;
-    if (smoothed.length === 1) primary = smoothed[0];
-    else if (smoothed.length >= 2) {
-      const sorted = [...smoothed].sort((a, b) => b.score - a.score);
-      primary = sorted[0];
-      secondary = sorted[1];
+    let rightHand: Hand | null = null;
+    let leftHand: Hand | null = null;
+    for (const h of smoothed) {
+      if (h.handedness === "Right" && (!rightHand || h.score > rightHand.score))
+        rightHand = h;
+      else if (h.handedness === "Left" && (!leftHand || h.score > leftHand.score))
+        leftHand = h;
     }
 
     const snap: HandSnapshot = {
       t: frame.t,
       frame: { ...frame, hands: smoothed },
-      primary,
-      secondary,
+      rightHand,
+      leftHand,
     };
     this.history.push(snap);
     if (this.history.length > HISTORY) this.history.shift();
@@ -70,21 +69,22 @@ export class GestureEngine {
 
     const ctx: DetectorContext = {
       frame: snap.frame,
-      primary,
-      secondary,
+      rightHand,
+      leftHand,
       history: this.history,
       emit,
       now: frame.t,
       settings,
     };
 
+    // Right hand drives actions; left hand drives the visual mode;
+    // both hands together drive zoom.
     detectSwipe(ctx);
     detectPinch(ctx);
     detectPointAndTap(ctx);
     detectGrab(ctx);
     detectTwoHand(ctx);
-    detectOpenPalm(ctx);
-    detectCircle(ctx);
+    detectFingerCount(ctx);
 
     if (emitted.length) {
       const dispatch = useGestureStore.getState().dispatch;

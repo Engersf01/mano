@@ -14,18 +14,14 @@ import {
   Sparkles,
   Hand,
   MonitorPlay,
-  LayoutGrid,
 } from "lucide-react";
-import { useToolsStore } from "@/store/tools";
 import { cn } from "@/lib/utils";
 
-const MODES: { key: SceneMode; label: string }[] = [
-  { key: "spatial", label: "Spatial" },
-  { key: "classic", label: "Classic" },
-  { key: "brain", label: "Brain" },
-  { key: "globe", label: "Globe" },
-  { key: "timeline", label: "Timeline" },
-  { key: "zoom", label: "Zoom" },
+const MODES: { key: SceneMode; label: string; finger: number }[] = [
+  { key: "classic", label: "Classic", finger: 1 },
+  { key: "timeline", label: "Timeline", finger: 2 },
+  { key: "zoom", label: "Zoom", finger: 3 },
+  { key: "brain", label: "Brain", finger: 4 },
 ];
 
 export function ControlDock() {
@@ -43,8 +39,6 @@ export function ControlDock() {
   const fps = useGestureStore((s) => s.fps);
   const ready = useGestureStore((s) => s.ready);
   const toggleAi = useAIStore((s) => s.toggle);
-  const setRadial = useToolsStore((s) => s.setRadial);
-  const showRadial = useToolsStore((s) => s.showRadial);
   const [openAudience, setOpenAudience] = useState(false);
 
   useEffect(() => {
@@ -94,29 +88,19 @@ export function ControlDock() {
           <button
             key={m.key}
             onClick={() => setMode(m.key)}
+            title={`Left hand: ${m.finger} finger${m.finger > 1 ? "s" : ""}`}
             className={cn(
-              "rounded-xl px-3 text-[11px] uppercase tracking-wider transition-colors",
+              "flex items-center gap-1.5 rounded-xl px-3 text-[11px] uppercase tracking-wider transition-colors",
               mode === m.key
                 ? "bg-aurora-cyan/15 text-aurora-cyan"
                 : "text-ink-300 hover:bg-white/5 hover:text-white",
             )}
           >
+            <span className="opacity-50">{m.finger}</span>
             {m.label}
           </button>
         ))}
         <div className="mx-1 h-7 w-px self-center bg-white/10" />
-        <button
-          onClick={() => setRadial(!showRadial)}
-          title="Open tools menu (or draw a circle gesture)"
-          className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-xl",
-            showRadial
-              ? "bg-aurora-violet/15 text-aurora-violet"
-              : "text-ink-200 hover:bg-white/5 hover:text-white",
-          )}
-        >
-          <LayoutGrid size={16} />
-        </button>
         <button
           onClick={toggleHands}
           title={showHands ? "Hide hand overlay" : "Show hand overlay"}

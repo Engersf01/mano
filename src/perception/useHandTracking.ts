@@ -65,12 +65,17 @@ export function useHandTracking({ enabled, videoRef }: Options) {
         frames = 0;
         fpsT = now;
       }
-      // Mirror landmarks to match the visually-mirrored camera feed so that
-      // all downstream code speaks user-perspective coordinates.
+      // Two corrections applied together:
+      // 1. Mirror landmark x so coords match the visually-mirrored (selfie)
+      //    video and the whole app speaks user-perspective coordinates.
+      // 2. Swap handedness. MediaPipe labels handedness assuming the input
+      //    is already selfie-mirrored; we feed the RAW frame, so its labels
+      //    are inverted. After the swap, "Right" == the user's right hand.
       const mirrored: HandFrame = {
         ...frame,
         hands: frame.hands.map((h) => ({
           ...h,
+          handedness: h.handedness === "Left" ? "Right" : "Left",
           landmarks: h.landmarks.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z })),
         })),
       };
@@ -102,7 +107,7 @@ export function useHandTracking({ enabled, videoRef }: Options) {
         const vw = video.videoWidth;
         const vh = video.videoHeight;
         const long = Math.max(vw, vh);
-        const scale = long > 384 ? 384 / long : 1;
+        const scale = long > 256 ? 256 / long : 1;
         const rw = Math.max(1, Math.round(vw * scale));
         const rh = Math.max(1, Math.round(vh * scale));
         const bitmap = await createImageBitmap(video, {

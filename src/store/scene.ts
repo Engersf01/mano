@@ -1,20 +1,26 @@
 "use client";
 import { create } from "zustand";
 
-export type SceneMode =
-  | "classic"
-  | "spatial"
-  | "brain"
-  | "globe"
-  | "timeline"
-  | "zoom";
+export type SceneMode = "classic" | "timeline" | "zoom" | "brain";
+
+export const MODE_BY_FINGER: Record<number, SceneMode> = {
+  1: "classic",
+  2: "timeline",
+  3: "zoom",
+  4: "brain",
+};
+
+export const MODE_LABELS: Record<SceneMode, string> = {
+  classic: "Classic",
+  timeline: "Timeline",
+  zoom: "Zoom",
+  brain: "Brain",
+};
 
 type State = {
   mode: SceneMode;
-  cameraTargetId: string | null;
   focusedSlide: string | null;
   zoomDepth: number;
-  envIntensity: number;
   showHands: boolean;
   showHud: boolean;
 };
@@ -29,11 +35,9 @@ type Actions = {
 };
 
 export const useSceneStore = create<State & Actions>()((set) => ({
-  mode: "spatial",
-  cameraTargetId: null,
+  mode: "classic",
   focusedSlide: null,
   zoomDepth: 1,
-  envIntensity: 0.85,
   showHands: true,
   showHud: true,
   setMode: (m) => set({ mode: m, focusedSlide: null }),
