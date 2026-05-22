@@ -10,6 +10,7 @@ import { AnnotationCanvas } from "@/ui/tools/AnnotationCanvas";
 import { StickyLayer } from "@/ui/tools/StickyLayer";
 import { Captions } from "@/ui/overlays/Captions";
 import { GestureGuide } from "@/ui/presenter/GestureGuide";
+import { ModePicker } from "@/ui/presenter/ModePicker";
 import { ErrorBoundary } from "@/ui/ErrorBoundary";
 import { useDeckStore } from "@/store/deck";
 import { sampleDeck } from "@/data/sampleDeck";
@@ -36,6 +37,7 @@ export default function PresentClient() {
         <Toolbox />
         <ControlDock />
         <GestureGuide />
+        <ModePicker />
       </div>
     </ErrorBoundary>
   );

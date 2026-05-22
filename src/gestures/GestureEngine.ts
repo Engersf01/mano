@@ -77,12 +77,18 @@ export class GestureEngine {
       settings,
     };
 
-    // Right hand drives actions; left hand drives the visual mode;
-    // both hands together drive zoom.
-    detectSwipe(ctx);
-    detectPinch(ctx);
-    detectPointAndTap(ctx);
-    detectGrab(ctx);
+    // Two-phase model:
+    //  - Left hand DOWN  -> Presenting: right hand drives all actions.
+    //  - Left hand UP    -> Choosing a view: right-hand singles are paused
+    //    so the two phases never fight each other.
+    // Two-hand zoom needs both hands and is always allowed.
+    const choosing = !!leftHand;
+    if (!choosing) {
+      detectSwipe(ctx);
+      detectPinch(ctx);
+      detectPointAndTap(ctx);
+      detectGrab(ctx);
+    }
     detectTwoHand(ctx);
     detectFingerCount(ctx);
 
