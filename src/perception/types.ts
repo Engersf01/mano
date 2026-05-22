@@ -1,27 +1,24 @@
-export type Landmark = { x: number; y: number; z: number };
-
-export type Handedness = "Left" | "Right";
-
-export type Hand = {
-  handedness: Handedness;
-  score: number;
-  landmarks: Landmark[];
-  worldLandmarks: Landmark[];
-};
-
-export type HandFrame = {
-  t: number;
-  hands: Hand[];
-  width: number;
-  height: number;
-};
+// Messages exchanged between the main thread and the gesture worker.
 
 export type WorkerInbound =
-  | { type: "init"; wasmBase: string }
-  | { type: "frame"; bitmap: ImageBitmap; t: number; width: number; height: number }
-  | { type: "dispose" };
+  | { type: "init" }
+  | { type: "frame"; bitmap: ImageBitmap; timestamp: number };
+
+export type GestureSample = {
+  // Canonical GestureRecognizer category, e.g. "Open_Palm", "Closed_Fist",
+  // "None". Empty string when no hand is present.
+  gesture: string;
+  score: number;
+  // Wrist position (landmark 0) in normalized raw-image coordinates [0,1].
+  // Raw means NOT selfie-mirrored — callers must mirror for screen space.
+  wristX: number;
+  wristY: number;
+  // MediaPipe's mirror-relative handedness label ("Left" | "Right" | "").
+  handedness: string;
+  timestamp: number;
+};
 
 export type WorkerOutbound =
   | { type: "ready" }
-  | { type: "frame"; payload: HandFrame }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "result"; sample: GestureSample };

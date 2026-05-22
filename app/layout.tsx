@@ -1,12 +1,10 @@
-import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Mano · Spatial presentation platform",
+  title: "Mano v2 — gesture deck",
   description:
-    "AI-enhanced cinematic presentation system controlled entirely by hand gestures.",
-  applicationName: "Mano",
+    "Milestone 1: drive a slide deck with an open-palm swipe. Pre-trained MediaPipe GestureRecognizer, discrete gestures, instant feedback.",
 };
 
 export const viewport: Viewport = {
@@ -15,9 +13,13 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body>{children}</body>
     </html>
   );
