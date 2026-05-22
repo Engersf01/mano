@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useSceneStore } from "@/store/scene";
 import { useGestureStore } from "@/store/gesture";
 import { useHandTracking } from "@/perception/useHandTracking";
 import { startCamera, stopStream } from "@/lib/webcam";
 import { HandsOverlay } from "@/scenes/primitives/HandsOverlay";
+import { fingerStates } from "@/gestures/landmarks";
 import { usePresenterStore } from "@/store/presenter";
 
 export function CameraTile() {
@@ -16,6 +17,33 @@ export function CameraTile() {
   const setError = useGestureStore((s) => s.setError);
   const ready = useGestureStore((s) => s.ready);
   const lastEvent = useGestureStore((s) => s.lastEvent);
+  const [handsDebug, setHandsDebug] = useState("—");
+
+  // Live per-hand finger-count readout (throttled ~5fps) for calibration.
+  useEffect(() => {
+    let raf = 0;
+    let last = 0;
+    const tick = (t: number) => {
+      if (t - last > 200) {
+        last = t;
+        const frame = useGestureStore.getState().frame;
+        if (frame && frame.hands.length) {
+          const parts = frame.hands.map((h) => {
+            const s = fingerStates(h);
+            const count = [s.index, s.middle, s.ring, s.pinky].filter(Boolean)
+              .length;
+            return `${h.handedness === "Left" ? "L" : "R"}:${count}`;
+          });
+          setHandsDebug(parts.join("   "));
+        } else {
+          setHandsDebug("—");
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,9 +100,17 @@ export function CameraTile() {
           <span className="text-ink-200">{ready ? "tracking" : "warming up"}</span>
         </div>
       </div>
-      <div className="border-t border-white/5 px-3 py-2">
+      <div className="space-y-1.5 border-t border-white/5 px-3 py-2">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="text-[10px] uppercase tracking-wider text-ink-400">Last gesture</span>
+          <span className="text-[10px] uppercase tracking-wider text-ink-400">
+            Hands (fingers)
+          </span>
+          <span className="font-mono text-xs text-aurora-violet">{handsDebug}</span>
+        </div>
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-ink-400">
+            Last gesture
+          </span>
           {lastEvent ? (
             <span className="font-mono text-xs text-aurora-cyan">
               {lastEvent.name} · {(lastEvent.confidence * 100).toFixed(0)}%

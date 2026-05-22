@@ -52,19 +52,18 @@ function fingerExtended(
   h: Hand,
   mcp: number,
   pip: number,
-  dip: number,
+  _dip: number,
   tip: number,
 ): boolean {
-  const a = h.landmarks[mcp];
-  const b = h.landmarks[pip];
-  const c = h.landmarks[dip];
-  const d = h.landmarks[tip];
-  const pipAngle = angleAt(a, b, c);
-  const dipAngle = angleAt(b, c, d);
-  const wrist = h.landmarks[L.WRIST];
-  const tipFar = dist(wrist, d) >= dist(wrist, b) * 0.9;
-  // Straight: angle near π. Curled: angle drops below ~1.7 rad (≈97°).
-  return pipAngle > 1.7 && dipAngle > 1.7 && tipFar;
+  // Distance-from-wrist test: for an extended finger the tip is clearly
+  // farther from the wrist than the PIP joint; for a curled finger the tip
+  // folds back toward the palm so it sits closer than the PIP. This is far
+  // more robust (and orientation-tolerant) than joint-angle thresholds.
+  const w = h.landmarks[L.WRIST];
+  const tipD = dist(w, h.landmarks[tip]);
+  const pipD = dist(w, h.landmarks[pip]);
+  const mcpD = dist(w, h.landmarks[mcp]);
+  return tipD > pipD * 1.02 && tipD > mcpD;
 }
 
 function thumbExtended(h: Hand): boolean {

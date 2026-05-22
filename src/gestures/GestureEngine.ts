@@ -13,6 +13,7 @@ import { detectPointAndTap } from "./detectors/point";
 import { detectGrab } from "./detectors/grab";
 import { detectTwoHand } from "./detectors/twoHand";
 import { detectFingerCount } from "./detectors/fingerCount";
+import { pickerState } from "./pickerState";
 
 const HISTORY = 24;
 
@@ -77,12 +78,17 @@ export class GestureEngine {
       settings,
     };
 
+    // Run the finger-count detector first so pickerState.visible reflects
+    // whether the left hand is ACTIVELY showing 1-4 fingers this frame.
+    detectFingerCount(ctx);
+
     // Two-phase model:
-    //  - Left hand DOWN  -> Presenting: right hand drives all actions.
-    //  - Left hand UP    -> Choosing a view: right-hand singles are paused
-    //    so the two phases never fight each other.
+    //  - Picker NOT visible -> Presenting: right hand drives all actions.
+    //    (A left hand merely resting in frame does NOT pause anything.)
+    //  - Picker visible (left hand showing a finger count) -> Choosing:
+    //    right-hand singles are paused so the phases never fight.
     // Two-hand zoom needs both hands and is always allowed.
-    const choosing = !!leftHand;
+    const choosing = pickerState.visible;
     if (!choosing) {
       detectSwipe(ctx);
       detectPinch(ctx);
@@ -90,7 +96,6 @@ export class GestureEngine {
       detectGrab(ctx);
     }
     detectTwoHand(ctx);
-    detectFingerCount(ctx);
 
     if (emitted.length) {
       const dispatch = useGestureStore.getState().dispatch;
