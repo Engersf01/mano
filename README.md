@@ -81,9 +81,16 @@ the browser.
 
 ## Deployment
 
-Deploys run through **Vercel's native Git integration** (connected via the Vercel
-GitHub app): `main` auto-deploys to production and every PR gets a preview URL.
-No deploy secrets or workflow files needed.
+Two options:
+
+1. **Vercel Git integration (recommended, zero config).** Import the repo at
+   [vercel.com/new](https://vercel.com/new). Vercel auto-detects Next.js,
+   deploys `main`, and gives every PR a preview URL. If you use this, delete
+   `.github/workflows/deploy-vercel.yml`.
+2. **GitHub Actions.** `.github/workflows/deploy-vercel.yml` deploys production
+   on push to `main`. It stays dormant (no red X) until you add three repo
+   secrets — `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (run
+   `vercel link` locally to get the two IDs).
 
 `.github/workflows/ci.yml` runs typecheck + production build on every push and
 PR, no secrets required.
