@@ -79,6 +79,22 @@ Open the page, allow camera access, hold up an open palm, and swipe. The model
 load needs network; everything then runs locally on-device. No frames ever leave
 the browser.
 
+## Deployment
+
+Two options:
+
+1. **Vercel Git integration (recommended, zero config).** Import the repo at
+   [vercel.com/new](https://vercel.com/new). Vercel auto-detects Next.js,
+   deploys `main`, and gives every PR a preview URL. If you use this, delete
+   `.github/workflows/deploy-vercel.yml`.
+2. **GitHub Actions.** `.github/workflows/deploy-vercel.yml` deploys production
+   on push to `main`. It stays dormant (no red X) until you add three repo
+   secrets — `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (run
+   `vercel link` locally to get the two IDs).
+
+`.github/workflows/ci.yml` runs typecheck + production build on every push and
+PR, no secrets required.
+
 ## What's next (only after M1 is approved)
 
 - **M2** — a second discrete gesture and a left/right hand split, *if* M1 proves
