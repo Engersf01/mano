@@ -9,7 +9,7 @@ export function ConfirmFlash() {
 
   const isNext = flash.dir === "next";
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
       <div
         key={flash.id}
         className="flex animate-flashIn items-center gap-3 rounded-2xl border border-white/15 bg-black/40 px-8 py-5 text-5xl font-bold backdrop-blur"

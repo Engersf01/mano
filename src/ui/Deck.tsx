@@ -9,11 +9,14 @@ import { Slide } from "./Slide";
 import { CameraTile } from "./CameraTile";
 import { DebugHUD } from "./DebugHUD";
 import { ConfirmFlash } from "./ConfirmFlash";
+import { DrawingOverlay } from "./DrawingOverlay";
+import { DrawingToolbar } from "./DrawingToolbar";
 
 export default function Deck() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const index = useDeck((s) => s.index);
   const count = useDeck((s) => s.count);
+  const scrimOpacity = useDeck((s) => s.scrimOpacity);
 
   // Stable across renders so the recognition effect never tears down.
   const onSwipe = useCallback((dir: SwipeDirection) => {
@@ -24,6 +27,13 @@ export default function Deck() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Don't hijack keys while typing in a sticky note.
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "TEXTAREA" || t.tagName === "INPUT" || t.isContentEditable)
+      )
+        return;
       if (e.key === "ArrowRight" || e.key === " ")
         useDeck.getState().navigate("next");
       else if (e.key === "ArrowLeft") useDeck.getState().navigate("prev");
@@ -44,10 +54,18 @@ export default function Deck() {
         ))}
       </div>
 
+      {/* Backdrop dimmer — fades the slide so ink reads on top of it */}
+      <div
+        className="pointer-events-none absolute inset-0 z-10 bg-ink-950"
+        style={{ opacity: scrimOpacity }}
+      />
+
+      <DrawingOverlay />
+
       <ConfirmFlash />
 
       {/* Progress dots */}
-      <div className="absolute bottom-6 left-1/2 flex -translate-x-1/2 gap-2">
+      <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-2">
         {slides.map((_, i) => (
           <span
             key={i}
@@ -59,13 +77,15 @@ export default function Deck() {
       </div>
 
       {/* Top-right: live debug + camera */}
-      <div className="absolute right-4 top-4 flex flex-col items-end gap-3">
+      <div className="absolute right-4 top-4 z-20 flex flex-col items-end gap-3">
         <CameraTile videoRef={videoRef} />
         <DebugHUD />
       </div>
 
+      <DrawingToolbar />
+
       {/* Bottom-left: cheat strip */}
-      <div className="absolute bottom-5 left-5 max-w-xs font-mono text-xs text-white/40">
+      <div className="absolute bottom-5 left-5 z-20 max-w-xs font-mono text-xs text-white/40">
         Open palm + swipe ← / → · or use arrow keys ·{" "}
         <span className="text-white/60">
           {index + 1}/{count}
