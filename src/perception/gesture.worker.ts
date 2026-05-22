@@ -36,6 +36,7 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
     const res = recognizer.recognizeForVideo(bitmap, timestamp);
     const top = res.gestures?.[0]?.[0];
     const wrist = res.landmarks?.[0]?.[0];
+    const indexTip = res.landmarks?.[0]?.[8];
     const hand = res.handedness?.[0]?.[0];
     post({
       type: "result",
@@ -44,6 +45,8 @@ function handleFrame(bitmap: ImageBitmap, timestamp: number): void {
         score: top?.score ?? 0,
         wristX: wrist?.x ?? 0.5,
         wristY: wrist?.y ?? 0.5,
+        indexX: indexTip?.x ?? 0.5,
+        indexY: indexTip?.y ?? 0.5,
         handedness: hand?.categoryName ?? "",
         timestamp,
       },

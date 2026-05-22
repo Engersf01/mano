@@ -13,6 +13,10 @@ export type GestureSample = {
   // Raw means NOT selfie-mirrored — callers must mirror for screen space.
   wristX: number;
   wristY: number;
+  // Index fingertip (landmark 8), same raw coordinate convention as the wrist.
+  // Used as the pen tip for gesture drawing.
+  indexX: number;
+  indexY: number;
   // MediaPipe's mirror-relative handedness label ("Left" | "Right" | "").
   handedness: string;
   timestamp: number;

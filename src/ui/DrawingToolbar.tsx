@@ -131,6 +131,10 @@ export function DrawingToolbar() {
       >
         Done
       </button>
+
+      <div className="basis-full text-center font-mono text-[10px] text-white/40">
+        gestures · ✌️ toggle · ☝️ draw · ✊ erase
+      </div>
     </div>
   );
 }

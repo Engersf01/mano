@@ -1,5 +1,6 @@
 import { useEffect, type RefObject } from "react";
 import { setLiveStats } from "./liveStats";
+import { setHandSample } from "./handChannel";
 import { createSwipeDetector, type SwipeDirection } from "@/gestures/swipe";
 import { MODEL_URL, WASM_BASE } from "./config";
 import type { GestureSample, WorkerInbound, WorkerOutbound } from "./types";
@@ -42,6 +43,7 @@ export function useGestureRecognition({ videoRef, onSwipe }: Options): void {
       }
       lastResultAt = now;
       setLiveStats({ gesture: s.gesture || "none", score: s.score, fps });
+      setHandSample(s);
       const dir = swipe.push(s);
       if (dir) onSwipe(dir);
     };
@@ -117,12 +119,15 @@ export function useGestureRecognition({ videoRef, onSwipe }: Options): void {
         const res = mainRecognizer.recognizeForVideo(video, ts);
         const top = res.gestures?.[0]?.[0];
         const wrist = res.landmarks?.[0]?.[0];
+        const indexTip = res.landmarks?.[0]?.[8];
         const hand = res.handedness?.[0]?.[0];
         consumeSample({
           gesture: top?.categoryName ?? "",
           score: top?.score ?? 0,
           wristX: wrist?.x ?? 0.5,
           wristY: wrist?.y ?? 0.5,
+          indexX: indexTip?.x ?? 0.5,
+          indexY: indexTip?.y ?? 0.5,
           handedness: hand?.categoryName ?? "",
           timestamp: ts,
         });
