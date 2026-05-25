@@ -31,6 +31,7 @@ type DeckState = {
   navigate: (dir: SwipeDirection) => void;
 
   drawMode: boolean;
+  stageMode: boolean; // composite the presenter into the slide
   tool: Tool;
   color: string;
   penWidth: number;
@@ -39,6 +40,7 @@ type DeckState = {
   notesBySlide: Record<number, Note[]>;
 
   toggleDrawMode: () => void;
+  toggleStage: () => void;
   setTool: (tool: Tool) => void;
   setColor: (color: string) => void;
   setPenWidth: (width: number) => void;
@@ -72,6 +74,7 @@ export const useDeck = create<DeckState>((set) => ({
     }),
 
   drawMode: false,
+  stageMode: false,
   tool: "pen",
   color: "#ffffff",
   penWidth: 4,
@@ -80,6 +83,7 @@ export const useDeck = create<DeckState>((set) => ({
   notesBySlide: {},
 
   toggleDrawMode: () => set((s) => ({ drawMode: !s.drawMode })),
+  toggleStage: () => set((s) => ({ stageMode: !s.stageMode })),
   setTool: (tool) => set({ tool }),
   setColor: (color) => set({ color, tool: "pen" }),
   setPenWidth: (penWidth) => set({ penWidth }),

@@ -11,12 +11,14 @@ import { DebugHUD } from "./DebugHUD";
 import { ConfirmFlash } from "./ConfirmFlash";
 import { DrawingOverlay } from "./DrawingOverlay";
 import { DrawingToolbar } from "./DrawingToolbar";
+import { PresenterStage } from "./PresenterStage";
 
 export default function Deck() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const index = useDeck((s) => s.index);
   const count = useDeck((s) => s.count);
   const scrimOpacity = useDeck((s) => s.scrimOpacity);
+  const stageMode = useDeck((s) => s.stageMode);
 
   // Stable across renders so the recognition effect never tears down.
   const onSwipe = useCallback((dir: SwipeDirection) => {
@@ -37,6 +39,7 @@ export default function Deck() {
       if (e.key === "ArrowRight" || e.key === " ")
         useDeck.getState().navigate("next");
       else if (e.key === "ArrowLeft") useDeck.getState().navigate("prev");
+      else if (e.key === "s" || e.key === "S") useDeck.getState().toggleStage();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -60,6 +63,8 @@ export default function Deck() {
         style={{ opacity: scrimOpacity }}
       />
 
+      <PresenterStage videoRef={videoRef} />
+
       <DrawingOverlay />
 
       <ConfirmFlash />
@@ -76,11 +81,23 @@ export default function Deck() {
         ))}
       </div>
 
-      {/* Top-right: live debug + camera */}
+      {/* Top-right: live debug + camera (camera hidden while you're on stage) */}
       <div className="absolute right-4 top-4 z-20 flex flex-col items-end gap-3">
-        <CameraTile videoRef={videoRef} />
+        <CameraTile videoRef={videoRef} hidden={stageMode} />
         <DebugHUD />
       </div>
+
+      {/* Top-left: stage toggle */}
+      <button
+        onClick={() => useDeck.getState().toggleStage()}
+        className={`absolute left-4 top-4 z-30 rounded-full border px-4 py-2 font-mono text-xs uppercase tracking-widest backdrop-blur transition ${
+          stageMode
+            ? "border-aurora-cyan/60 bg-aurora-cyan/20 text-white"
+            : "border-white/15 bg-black/40 text-white/70 hover:bg-black/60 hover:text-white"
+        }`}
+      >
+        {stageMode ? "◉ On stage" : "◎ Stage"}
+      </button>
 
       <DrawingToolbar />
 
