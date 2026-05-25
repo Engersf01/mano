@@ -1,75 +1,148 @@
-"use client";
 import { create } from "zustand";
+import { slides } from "@/data/slides";
+import type { SwipeDirection } from "@/gestures/swipe";
 
-export type SlideMedia = {
-  kind: "image" | "video" | "youtube" | "iframe" | "model";
-  src: string;
-  caption?: string;
+export type Flash = { dir: SwipeDirection; id: number } | null;
+
+export type Tool = "pen" | "eraser";
+
+// Stroke points are stored in normalized 0..1 coordinates so they survive
+// viewport resizes and DPR changes — the canvas multiplies by its own size.
+export type Point = { x: number; y: number };
+
+export type Stroke = {
+  tool: Tool;
+  color: string;
+  width: number;
+  points: Point[];
 };
 
-export type SlideKind = "title" | "content" | "quote" | "stat" | "media" | "split" | "chart";
-
-export type Slide = {
+export type Note = {
   id: string;
-  kind: SlideKind;
-  title?: string;
-  subtitle?: string;
-  body?: string;
-  bullets?: string[];
-  quote?: string;
-  attribution?: string;
-  stat?: { value: string; label: string };
-  media?: SlideMedia;
-  notes?: string;
-  accent?: "cyan" | "violet" | "pink" | "gold";
-  position?: [number, number, number];
-  rotation?: [number, number, number];
-  tags?: string[];
-  timestamp?: string;
-  location?: { lat: number; lng: number; place: string };
+  x: number; // normalized 0..1, top-left
+  y: number;
+  text: string;
 };
 
-export type Deck = {
-  id: string;
-  title: string;
-  author: string;
-  slides: Slide[];
-};
-
-type State = {
-  deck: Deck | null;
+type DeckState = {
   index: number;
-  history: number[];
+  count: number;
+  flash: Flash;
+  navigate: (dir: SwipeDirection) => void;
+
+  drawMode: boolean;
+  stageMode: boolean; // composite the presenter into the slide
+  tool: Tool;
+  color: string;
+  penWidth: number;
+  scrimOpacity: number; // 0 = slide fully visible, 1 = slide fully dimmed
+  strokesBySlide: Record<number, Stroke[]>;
+  notesBySlide: Record<number, Note[]>;
+
+  toggleDrawMode: () => void;
+  toggleStage: () => void;
+  setTool: (tool: Tool) => void;
+  setColor: (color: string) => void;
+  setPenWidth: (width: number) => void;
+  setScrimOpacity: (opacity: number) => void;
+  addStroke: (slide: number, stroke: Stroke) => void;
+  undoStroke: (slide: number) => void;
+  clearSlide: (slide: number) => void;
+  addNote: (slide: number) => void;
+  updateNote: (slide: number, id: string, patch: Partial<Note>) => void;
+  removeNote: (slide: number, id: string) => void;
 };
 
-type Actions = {
-  load: (d: Deck) => void;
-  next: () => void;
-  prev: () => void;
-  goto: (i: number) => void;
-};
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
-export const useDeckStore = create<State & Actions>()((set, get) => ({
-  deck: null,
+export const useDeck = create<DeckState>((set) => ({
   index: 0,
-  history: [0],
-  load: (d) => set({ deck: d, index: 0, history: [0] }),
-  next: () =>
+  count: slides.length,
+  flash: null,
+  navigate: (dir) =>
     set((s) => {
-      if (!s.deck) return s;
-      const i = Math.min(s.index + 1, s.deck.slides.length - 1);
-      return { index: i, history: [...s.history, i].slice(-20) };
+      const next =
+        dir === "next"
+          ? Math.min(s.index + 1, s.count - 1)
+          : Math.max(s.index - 1, 0);
+      // Always bump the flash id, even at a deck edge, so the user gets
+      // immediate confirmation that the gesture registered.
+      return {
+        index: next,
+        flash: { dir, id: (s.flash?.id ?? 0) + 1 },
+      };
     }),
-  prev: () =>
+
+  drawMode: false,
+  stageMode: false,
+  tool: "pen",
+  color: "#ffffff",
+  penWidth: 4,
+  scrimOpacity: 0,
+  strokesBySlide: {},
+  notesBySlide: {},
+
+  toggleDrawMode: () => set((s) => ({ drawMode: !s.drawMode })),
+  toggleStage: () => set((s) => ({ stageMode: !s.stageMode })),
+  setTool: (tool) => set({ tool }),
+  setColor: (color) => set({ color, tool: "pen" }),
+  setPenWidth: (penWidth) => set({ penWidth }),
+  setScrimOpacity: (opacity) => set({ scrimOpacity: clamp01(opacity) }),
+
+  addStroke: (slide, stroke) =>
+    set((s) => ({
+      strokesBySlide: {
+        ...s.strokesBySlide,
+        [slide]: [...(s.strokesBySlide[slide] ?? []), stroke],
+      },
+    })),
+
+  undoStroke: (slide) =>
+    set((s) => ({
+      strokesBySlide: {
+        ...s.strokesBySlide,
+        [slide]: (s.strokesBySlide[slide] ?? []).slice(0, -1),
+      },
+    })),
+
+  clearSlide: (slide) =>
+    set((s) => ({
+      strokesBySlide: { ...s.strokesBySlide, [slide]: [] },
+    })),
+
+  addNote: (slide) =>
     set((s) => {
-      if (!s.deck) return s;
-      const i = Math.max(s.index - 1, 0);
-      return { index: i, history: [...s.history, i].slice(-20) };
+      const existing = s.notesBySlide[slide] ?? [];
+      const offset = (existing.length % 5) * 0.03;
+      const note: Note = {
+        id:
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `n${Date.now()}${Math.random()}`,
+        x: 0.4 + offset,
+        y: 0.3 + offset,
+        text: "",
+      };
+      return {
+        notesBySlide: { ...s.notesBySlide, [slide]: [...existing, note] },
+      };
     }),
-  goto: (i) =>
-    set((s) => {
-      if (!s.deck) return s;
-      const clamped = Math.max(0, Math.min(i, s.deck.slides.length - 1));
-      return { index: clamped, history: [...s.history, clamped].slice(-20) };
-    }),
+
+  updateNote: (slide, id, patch) =>
+    set((s) => ({
+      notesBySlide: {
+        ...s.notesBySlide,
+        [slide]: (s.notesBySlide[slide] ?? []).map((n) =>
+          n.id === id ? { ...n, ...patch } : n,
+        ),
+      },
+    })),
+
+  removeNote: (slide, id) =>
+    set((s) => ({
+      notesBySlide: {
+        ...s.notesBySlide,
+        [slide]: (s.notesBySlide[slide] ?? []).filter((n) => n.id !== id),
+      },
+    })),
 }));
