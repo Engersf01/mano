@@ -119,7 +119,16 @@ export const useAvatarStore = create<State & Actions>()((set, get) => ({
         room: saved.room ?? "default",
         target: saved.target === "here" ? "here" : "device",
         config: { ...DEFAULT_CONFIG, ...(saved.config ?? {}) },
-        settings: { ...DEFAULT_DISPLAY_SETTINGS, ...(saved.settings ?? {}) },
+        // Merge chroma explicitly: a settings object persisted before chroma
+        // existed would otherwise spread in without it and crash the panel.
+        settings: {
+          ...DEFAULT_DISPLAY_SETTINGS,
+          ...(saved.settings ?? {}),
+          chroma: {
+            ...DEFAULT_DISPLAY_SETTINGS.chroma,
+            ...(saved.settings?.chroma ?? {}),
+          },
+        },
       });
     } catch {
       // ignore malformed storage and keep defaults

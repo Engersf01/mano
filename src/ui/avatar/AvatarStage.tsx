@@ -4,8 +4,10 @@
  * in the console, so it carries no layout assumptions of its own — it fills
  * whatever box it's given.
  */
+import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { DisplaySettings, DisplayStatus } from "@/heygen/protocol";
+import { ChromaVideo } from "./ChromaVideo";
 
 type Props = {
   videoRef: (element: HTMLVideoElement | null) => void;
@@ -39,13 +41,37 @@ export function AvatarStage({
 }: Props) {
   const showVideo = status === "live" || status === "starting";
 
+  /**
+   * The video element is needed either way — it carries the audio, and it is the
+   * texture source when keying. When the key is on it stops being what you look
+   * at, so it is moved out of sight rather than hidden: `display:none` lets a
+   * browser stop decoding frames, which would starve the canvas.
+   */
+  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
+  const [keyFailed, setKeyFailed] = useState(false);
+  const keying = settings.chroma.enabled && !keyFailed;
+
+  const handleKeyUnsupported = useCallback(() => setKeyFailed(true), []);
+
+  const attachVideo = useCallback(
+    (element: HTMLVideoElement | null) => {
+      setVideoEl(element);
+      videoRef(element);
+    },
+    [videoRef],
+  );
+
+  const framing = {
+    transform: `${settings.mirror ? "scaleX(-1) " : ""}scale(${settings.scale})`,
+  };
+
   return (
     <div
       className={cn("relative h-full w-full overflow-hidden", className)}
       style={{ background: settings.background }}
     >
       <video
-        ref={videoRef}
+        ref={attachVideo}
         autoPlay
         playsInline
         /**
@@ -55,12 +81,25 @@ export function AvatarStage({
         className={cn(
           "h-full w-full transition-opacity duration-700",
           settings.fit === "cover" ? "object-cover" : "object-contain",
-          showVideo ? "opacity-100" : "opacity-0",
+          showVideo && !keying ? "opacity-100" : "opacity-0",
+          keying && "pointer-events-none absolute inset-0",
         )}
-        style={{
-          transform: `${settings.mirror ? "scaleX(-1) " : ""}scale(${settings.scale})`,
-        }}
+        style={framing}
       />
+
+      {keying && (
+        <ChromaVideo
+          video={videoEl}
+          settings={settings.chroma}
+          objectFit={settings.fit}
+          className={cn(
+            "absolute inset-0 transition-opacity duration-700",
+            showVideo ? "opacity-100" : "opacity-0",
+          )}
+          style={framing}
+          onUnsupported={handleKeyUnsupported}
+        />
+      )}
 
       {/* A soft rim that pulses while the avatar talks — readable from across a
           room. A radial vignette rather than an inset shadow: negative spread on

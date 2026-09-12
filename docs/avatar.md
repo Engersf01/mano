@@ -61,6 +61,9 @@ itself on the activation tap, with no console and no control channel.
 | `speed` | Voice rate, 0.8–1.2 |
 | `mic` | `1` to listen through the panel's microphone |
 | `fit` `mirror` `captions` `bg` `scale` | Framing, same meanings as the console's Framing panel |
+| `chroma` | `1` to remove the avatar's green backdrop |
+| `key` | Backdrop colour to remove, hex without `#` (default `00b140`) |
+| `similarity` `smoothness` `spill` | Key strength, edge softness, green-spill removal (0–1) |
 
 The console builds this link for you — see **Standalone link** in the Display
 panel, which bakes in whatever avatar, voice and context are currently selected.
@@ -84,6 +87,37 @@ To test on the device against a deployed build rather than this machine:
 
 Deployed over HTTPS, the microphone and the screen wake lock both work — which
 they cannot do over plain `http://` on a LAN.
+
+## Green backdrop, black panel
+
+Some LiveAvatar avatars are delivered over a **green screen**, meant to be keyed
+out — which is why an untouched feed shows a bright green box. A holographic or
+transparent panel reads black as "nothing", so the backdrop has to become true
+black for the avatar to appear to float:
+
+```
+/avatar/display?avatar=<id>&context=<id>&chroma=1&bg=000000&mic=1
+```
+
+The key runs as a WebGL shader over the video, in chroma (Cb/Cr) space rather
+than RGB so shadows on the backdrop and highlights on the subject key alike and
+skin tones survive. Spill suppression pulls the green fringe off hair and
+shoulders. If WebGL is unavailable the page falls back to the raw video rather
+than showing nothing.
+
+Tune it live from the console's **Framing** panel, or with `key`, `similarity`,
+`smoothness` and `spill` in the link.
+
+## Running chrome-free on the panel
+
+A browser address bar above the avatar ruins a kiosk. Two things address it:
+
+- The activation tap also requests **fullscreen**, so a normally-opened link goes
+  edge to edge after one touch.
+- The app ships a **web app manifest** (`display: fullscreen`, starting at
+  `/avatar/display`). Using the Android browser's *Add to Home screen* and
+  launching from that icon opens with no browser UI at all — the better option
+  for a panel that runs all day.
 
 ## Why the panel needs a tap
 

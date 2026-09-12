@@ -1,0 +1,252 @@
+"use client";
+/**
+ * Green-screen removal for the avatar feed.
+ *
+ * LiveAvatar delivers some avatars over a green backdrop, meant to be keyed
+ * out. On a holographic panel that matters twice over: black is what the panel
+ * reads as "nothing", so keying the green to black is the difference between a
+ * floating presenter and a glowing green box.
+ *
+ * The key runs on the GPU — a per-pixel pass in JS would not hold 30fps on a
+ * panel-class Android device.
+ */
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+import type { ChromaSettings } from "@/heygen/protocol";
+
+const VERTEX_SHADER = `
+attribute vec2 a_pos;
+varying vec2 v_uv;
+void main() {
+  // Flip V: WebGL's origin is bottom-left, the video's is top-left.
+  v_uv = vec2((a_pos.x + 1.0) * 0.5, 1.0 - (a_pos.y + 1.0) * 0.5);
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
+
+/**
+ * Keying happens in chroma (Cb/Cr) space rather than RGB: it separates hue from
+ * brightness, so shadows on the backdrop and highlights on the subject key the
+ * same way, and skin tones stay put.
+ */
+const FRAGMENT_SHADER = `
+precision mediump float;
+uniform sampler2D u_tex;
+uniform vec3 u_key;
+uniform float u_similarity;
+uniform float u_smoothness;
+uniform float u_spill;
+varying vec2 v_uv;
+
+vec2 chroma(vec3 c) {
+  return vec2(
+    c.r * -0.169 + c.g * -0.331 + c.b *  0.500,
+    c.r *  0.500 + c.g * -0.419 + c.b * -0.081
+  );
+}
+
+void main() {
+  vec4 px = texture2D(u_tex, v_uv);
+  float d = distance(chroma(px.rgb), chroma(u_key));
+  float alpha = smoothstep(u_similarity, u_similarity + u_smoothness, d);
+
+  // Spill suppression: near the edges the backdrop bleeds green onto hair and
+  // shoulders. Pull those pixels toward their own luma instead of leaving a
+  // green fringe.
+  float luma = dot(px.rgb, vec3(0.2126, 0.7152, 0.0722));
+  vec3 despilled = mix(px.rgb, vec3(luma), u_spill);
+  vec3 rgb = mix(despilled, px.rgb, alpha);
+
+  gl_FragColor = vec4(rgb, alpha);
+}`;
+
+function compile(gl: WebGLRenderingContext, type: number, source: string) {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace(/^#/, "");
+  const full =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : clean;
+  const n = Number.parseInt(full.slice(0, 6), 16);
+  if (!Number.isFinite(n)) return [0, 1, 0];
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+
+type Props = {
+  video: HTMLVideoElement | null;
+  settings: ChromaSettings;
+  objectFit: "cover" | "contain";
+  className?: string;
+  style?: React.CSSProperties;
+  /** Told when the GPU path can't run, so the caller can show the raw video. */
+  onUnsupported?: () => void;
+};
+
+export function ChromaVideo({
+  video,
+  settings,
+  objectFit,
+  className,
+  style,
+  onUnsupported,
+}: Props) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  /**
+   * Kept in a ref, never a dependency: this effect's cleanup deliberately loses
+   * the GL context, so re-running it on a changed callback identity would kill
+   * the canvas and every later attempt to use it.
+   */
+  const onUnsupportedRef = useRef(onUnsupported);
+  onUnsupportedRef.current = onUnsupported;
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !video) return;
+
+    // Straight (un-premultiplied) alpha keeps the shader's output simple: the
+    // page background behind the canvas is what shows through a keyed pixel.
+    const fail = () => {
+      setFailed(true);
+      onUnsupportedRef.current?.();
+    };
+
+    const gl = canvas.getContext("webgl", {
+      alpha: true,
+      premultipliedAlpha: false,
+      antialias: false,
+      depth: false,
+    });
+    if (!gl) {
+      fail();
+      return;
+    }
+
+    const vs = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
+    const fs = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
+    const program = vs && fs ? gl.createProgram() : null;
+    if (!vs || !fs || !program) {
+      fail();
+      return;
+    }
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      fail();
+      return;
+    }
+    gl.useProgram(program);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      gl.STATIC_DRAW,
+    );
+    const posLocation = gl.getAttribLocation(program, "a_pos");
+    gl.enableVertexAttribArray(posLocation);
+    gl.vertexAttribPointer(posLocation, 2, gl.FLOAT, false, 0, 0);
+
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    const uKey = gl.getUniformLocation(program, "u_key");
+    const uSimilarity = gl.getUniformLocation(program, "u_similarity");
+    const uSmoothness = gl.getUniformLocation(program, "u_smoothness");
+    const uSpill = gl.getUniformLocation(program, "u_spill");
+
+    let running = true;
+    let rafId = 0;
+    let frameHandle = 0;
+
+    const draw = () => {
+      if (!running) return;
+      const current = settingsRef.current;
+
+      if (video.readyState >= 2 && video.videoWidth > 0) {
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          gl.viewport(0, 0, canvas.width, canvas.height);
+        }
+        gl.uniform3fv(uKey, hexToRgb(current.keyColor));
+        gl.uniform1f(uSimilarity, current.similarity);
+        gl.uniform1f(uSmoothness, current.smoothness);
+        gl.uniform1f(uSpill, current.spill);
+
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+      schedule();
+    };
+
+    /**
+     * requestVideoFrameCallback fires once per decoded frame — no redundant
+     * work between frames, which matters on a panel running all day.
+     */
+    type FrameVideo = HTMLVideoElement & {
+      requestVideoFrameCallback?: (cb: () => void) => number;
+      cancelVideoFrameCallback?: (handle: number) => void;
+    };
+    const frameVideo = video as FrameVideo;
+
+    function schedule() {
+      if (!running) return;
+      if (frameVideo.requestVideoFrameCallback) {
+        frameHandle = frameVideo.requestVideoFrameCallback(draw);
+      } else {
+        rafId = requestAnimationFrame(draw);
+      }
+    }
+
+    schedule();
+
+    return () => {
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      if (frameHandle && frameVideo.cancelVideoFrameCallback) {
+        frameVideo.cancelVideoFrameCallback(frameHandle);
+      }
+      gl.deleteTexture(texture);
+      gl.deleteBuffer(buffer);
+      gl.deleteProgram(program);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+    };
+  }, [video]);
+
+  if (failed) return null;
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      className={cn("h-full w-full", className)}
+      style={{ objectFit, ...style }}
+    />
+  );
+}
