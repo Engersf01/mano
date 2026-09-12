@@ -9,7 +9,12 @@
  * panel starts its own session straight after the activation tap with no console
  * involved. That makes any deployment — Vercel included — testable on the device.
  */
-import { DEFAULT_DISPLAY_SETTINGS, type DisplayFit, type DisplaySettings } from "./protocol";
+import {
+  DEFAULT_CHROMA,
+  DEFAULT_DISPLAY_SETTINGS,
+  type DisplayFit,
+  type DisplaySettings,
+} from "./protocol";
 import type { Interactivity, SessionRequest, VideoQuality } from "./types";
 
 const QUALITIES: VideoQuality[] = ["low", "medium", "high", "very_high"];
@@ -46,6 +51,15 @@ export function parseStandaloneParams(search: string): StandaloneConfig {
       ? `#${params.get("bg")!.replace(/^#/, "")}`
       : DEFAULT_DISPLAY_SETTINGS.background,
     scale: num(params.get("scale"), DEFAULT_DISPLAY_SETTINGS.scale, 0.5, 1.5),
+    chroma: {
+      enabled: flag(params.get("chroma"), DEFAULT_CHROMA.enabled),
+      keyColor: params.get("key")
+        ? `#${params.get("key")!.replace(/^#/, "")}`
+        : DEFAULT_CHROMA.keyColor,
+      similarity: num(params.get("similarity"), DEFAULT_CHROMA.similarity, 0, 1),
+      smoothness: num(params.get("smoothness"), DEFAULT_CHROMA.smoothness, 0, 1),
+      spill: num(params.get("spill"), DEFAULT_CHROMA.spill, 0, 1),
+    },
   };
 
   if (!avatarId) return { request: null, settings };
@@ -104,6 +118,21 @@ export function buildStandaloneUrl(
     params.set("bg", settings.background.replace(/^#/, ""));
   }
   if (settings.scale !== DEFAULT_DISPLAY_SETTINGS.scale) params.set("scale", String(settings.scale));
+
+  const chroma = settings.chroma;
+  if (chroma.enabled) {
+    params.set("chroma", "1");
+    if (chroma.keyColor !== DEFAULT_CHROMA.keyColor) {
+      params.set("key", chroma.keyColor.replace(/^#/, ""));
+    }
+    if (chroma.similarity !== DEFAULT_CHROMA.similarity) {
+      params.set("similarity", String(chroma.similarity));
+    }
+    if (chroma.smoothness !== DEFAULT_CHROMA.smoothness) {
+      params.set("smoothness", String(chroma.smoothness));
+    }
+    if (chroma.spill !== DEFAULT_CHROMA.spill) params.set("spill", String(chroma.spill));
+  }
 
   return `${origin}/avatar/display?${params.toString()}`;
 }

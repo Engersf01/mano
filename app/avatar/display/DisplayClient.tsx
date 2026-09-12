@@ -81,6 +81,14 @@ export default function DisplayClient() {
    */
   const activate = useCallback(() => {
     setActivated(true);
+
+    /**
+     * The same tap that unlocks audio is the only user gesture we get, so spend
+     * it on fullscreen too — otherwise the panel shows the browser's address bar
+     * above the avatar. Best-effort: a browser that refuses simply stays windowed.
+     */
+    void document.documentElement.requestFullscreen?.({ navigationUI: "hide" }).catch(() => {});
+
     const request = autoStartRef.current;
     if (request) void sessionRef.current.start(request);
   }, []);
@@ -217,7 +225,7 @@ export default function DisplayClient() {
         <span className="font-display text-3xl tracking-tight text-white">Avatar display</span>
         <span className="max-w-sm text-sm text-ink-300">
           Tap anywhere to activate. The browser needs one touch before it will play the
-          avatar&rsquo;s voice.
+          avatar&rsquo;s voice, and the same tap takes the panel fullscreen.
           {standalone && " This link starts its own session — no console needed."}
         </span>
         <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-ink-200">

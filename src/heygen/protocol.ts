@@ -8,6 +8,31 @@ import type { SessionRequest } from "./types";
 
 export type DisplayFit = "cover" | "contain";
 
+/**
+ * Green-screen keying. Some LiveAvatar avatars arrive on a green backdrop; on a
+ * holographic panel the backdrop must become true black, which the panel reads
+ * as nothing at all.
+ */
+export type ChromaSettings = {
+  enabled: boolean;
+  /** The backdrop colour to remove. */
+  keyColor: string;
+  /** How close to the key a pixel must be before it is removed (0–1). */
+  similarity: number;
+  /** Width of the soft edge between kept and removed (0–1). */
+  smoothness: number;
+  /** How hard to pull green spill out of hair and shoulders (0–1). */
+  spill: number;
+};
+
+export const DEFAULT_CHROMA: ChromaSettings = {
+  enabled: false,
+  keyColor: "#00b140",
+  similarity: 0.4,
+  smoothness: 0.08,
+  spill: 0.5,
+};
+
 /** Presentation knobs the operator can change on the panel without restarting. */
 export type DisplaySettings = {
   fit: DisplayFit;
@@ -18,6 +43,7 @@ export type DisplaySettings = {
   background: string;
   /** 0.5–1.5 — trims the frame when the panel crops the edges. */
   scale: number;
+  chroma: ChromaSettings;
 };
 
 export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
@@ -26,6 +52,7 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   showCaptions: false,
   background: "#03040c",
   scale: 1,
+  chroma: DEFAULT_CHROMA,
 };
 
 export type SpeakMode =
