@@ -37,16 +37,24 @@ function baseUrl() {
   return (process.env.LIVEAVATAR_API_URL ?? DEFAULT_BASE).replace(/\/+$/, "");
 }
 
+/**
+ * LiveAvatar is a separate platform from HeyGen's classic API and the two key
+ * types are NOT interchangeable — a key from app.heygen.com will 401 here. The
+ * canonical name is LIVEAVATAR_API_KEY; HEYGEN_API_KEY stays accepted as an
+ * alias because that is what people reach for first.
+ */
+const KEY_VARS = ["LIVEAVATAR_API_KEY", "HEYGEN_API_KEY"] as const;
+
 /** True when a key is configured — lets the UI explain itself instead of 500ing. */
 export function hasApiKey() {
-  return Boolean(process.env.HEYGEN_API_KEY ?? process.env.LIVEAVATAR_API_KEY);
+  return KEY_VARS.some((name) => Boolean(process.env[name]));
 }
 
 function apiKey() {
-  const key = process.env.HEYGEN_API_KEY ?? process.env.LIVEAVATAR_API_KEY;
+  const key = process.env.LIVEAVATAR_API_KEY ?? process.env.HEYGEN_API_KEY;
   if (!key) {
     throw new LiveAvatarError(
-      "No HeyGen API key configured. Add HEYGEN_API_KEY to .env.local and restart the server.",
+      "No LiveAvatar API key configured. Add LIVEAVATAR_API_KEY to .env.local and restart the server. Get the key from app.liveavatar.com/developers — a classic HeyGen API key will not work.",
       503,
     );
   }
@@ -65,9 +73,9 @@ function explain<T>(json: Envelope<T> | undefined, status: number) {
   }
   if (json?.message) return json.message;
   if (status === 401 || status === 403) {
-    return "HeyGen rejected the API key (401/403). Check that the key is valid and the plan includes LiveAvatar.";
+    return "LiveAvatar rejected the API key (401/403). Note that a classic HeyGen API key does not work here — the key must come from app.liveavatar.com/developers, on a plan that includes API access.";
   }
-  return `HeyGen request failed with HTTP ${status}.`;
+  return `LiveAvatar request failed with HTTP ${status}.`;
 }
 
 type RequestOptions = Omit<RequestInit, "body"> & {

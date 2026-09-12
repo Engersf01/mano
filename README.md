@@ -92,7 +92,10 @@ npm run typecheck
 
 Set `OPENAI_API_KEY` in `.env.local` to enable the AI assistant; without it, Mano falls back to local heuristics.
 
-Set `HEYGEN_API_KEY` to enable the avatar console at `/avatar`. To drive a panel
+Set `LIVEAVATAR_API_KEY` to enable the avatar console at `/avatar` — get it from
+[app.liveavatar.com/developers](https://app.liveavatar.com/developers). LiveAvatar
+is a separate platform from HeyGen's classic API and the keys are **not**
+interchangeable. To drive a panel
 on another device, bind the dev server to the network with
 `npm run dev -- --hostname 0.0.0.0`.
 

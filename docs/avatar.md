@@ -12,14 +12,22 @@ Two routes:
 
 ## Setup
 
-1. Put a HeyGen API key in `.env.local`:
+1. Put a LiveAvatar API key in `.env.local`:
 
    ```bash
-   HEYGEN_API_KEY=sk_...
+   LIVEAVATAR_API_KEY=...
    ```
 
-   LiveAvatar streaming requires a paid HeyGen plan. Without the key the console
-   loads and says so, rather than failing mid-flow.
+   Get it from [app.liveavatar.com/developers](https://app.liveavatar.com/developers)
+   (log in with your HeyGen credentials).
+
+   **LiveAvatar is a separate platform from HeyGen's classic API, and the two key
+   types are not interchangeable** — a key from `app.heygen.com/settings?nav=API`
+   is rejected here. `HEYGEN_API_KEY` is accepted as an alias for the variable
+   name, but the *value* must be a LiveAvatar key.
+
+   API access requires a paid plan. Without a key the console loads and says so,
+   rather than failing mid-flow.
 
 2. Start the server so the panel can reach it over the LAN:
 

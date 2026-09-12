@@ -278,10 +278,19 @@ export default function AvatarConsoleClient() {
           <div className="mb-5 flex gap-3 rounded-2xl border border-aurora-gold/25 bg-aurora-gold/10 px-4 py-3 text-sm text-aurora-gold">
             <TriangleAlert size={16} className="mt-0.5 shrink-0" />
             <div className="leading-relaxed">
-              <strong className="font-medium">No HeyGen API key.</strong> Add{" "}
-              <code className="font-mono text-xs">HEYGEN_API_KEY</code> to{" "}
+              <strong className="font-medium">No LiveAvatar API key.</strong> Add{" "}
+              <code className="font-mono text-xs">LIVEAVATAR_API_KEY</code> to{" "}
               <code className="font-mono text-xs">.env.local</code> and restart the dev server.
-              The avatar library, contexts and sessions all need it.
+              The avatar library, contexts and sessions all need it. Get the key from{" "}
+              <a
+                href="https://app.liveavatar.com/developers"
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2 hover:text-white"
+              >
+                app.liveavatar.com/developers
+              </a>{" "}
+              — a classic HeyGen API key will not work here.
             </div>
           </div>
         )}
