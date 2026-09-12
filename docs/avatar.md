@@ -60,8 +60,8 @@ itself on the activation tap, with no console and no control channel.
 | `mode` | `CONVERSATIONAL` (default) or `PUSH_TO_TALK` |
 | `speed` | Voice rate, 0.8–1.2 |
 | `mic` | `1` to listen through the panel's microphone |
-| `fit` `mirror` `captions` `bg` `scale` | Framing, same meanings as the console's Framing panel |
-| `chroma` | `1` to remove the avatar's green backdrop |
+| `fit` `mirror` `captions` `bg` `scale` | Framing, same meanings as the console's Framing panel (`bg` defaults to pure black) |
+| `chroma` | Green-backdrop removal. **On by default** — pass `chroma=0` for the raw feed |
 | `key` | Backdrop colour to remove, hex without `#` (default `00b140`) |
 | `similarity` `smoothness` `spill` | Key strength, edge softness, green-spill removal (0–1) |
 
@@ -93,11 +93,17 @@ they cannot do over plain `http://` on a LAN.
 Some LiveAvatar avatars are delivered over a **green screen**, meant to be keyed
 out — which is why an untouched feed shows a bright green box. A holographic or
 transparent panel reads black as "nothing", so the backdrop has to become true
-black for the avatar to appear to float:
+black for the avatar to appear to float.
+
+**This is the default**, because it is what the panel is for. A plain link
+already keys the backdrop and paints pure black behind it:
 
 ```
-/avatar/display?avatar=<id>&context=<id>&chroma=1&bg=000000&mic=1
+/avatar/display?avatar=<id>&context=<id>&mic=1
 ```
+
+Pass `chroma=0` for the untouched feed, or `bg=` any colour to put something
+else behind the avatar.
 
 The key runs as a WebGL shader over the video, in chroma (Cb/Cr) space rather
 than RGB so shadows on the backdrop and highlights on the subject key alike and
