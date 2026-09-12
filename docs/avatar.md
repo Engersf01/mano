@@ -124,6 +124,10 @@ over `/v1/contexts`.
   attaching one is not optional if you want conversation.
 - `${variable}` in the prompt or opening line is a dynamic variable, filled in
   per session. The editor lists the ones it detects.
+- **A context that declares required variables cannot start without them** — the
+  API rejects the session with `Missing dynamic variables`. Selecting such a
+  context in the console reveals an input per variable and holds the Start button
+  until they're filled. In a standalone link they travel as `var.<name>=<value>`.
 - Contexts are independent of avatars and voices, so one context can be paired
   with different faces.
 - Edits apply on the *next* session — restart to pick them up.

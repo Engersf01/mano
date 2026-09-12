@@ -12,7 +12,7 @@ import {
   type VoiceSummary,
 } from "@/heygen/types";
 import type { AvatarConfig, RenderTarget } from "@/store/avatar";
-import { Button, ErrorNote, Field, Panel, Select, StatusPill, Toggle } from "./primitives";
+import { Button, ErrorNote, Field, Panel, Select, StatusPill, TextInput, Toggle } from "./primitives";
 
 const STATUS_TONE: Record<DisplayStatus, string> = {
   offline: "idle",
@@ -49,6 +49,9 @@ type Props = {
   canStart: boolean;
   onStart: () => void;
   onStop: () => void;
+  /** `${...}` placeholders the selected context declares as required. */
+  requiredVariables: string[];
+  loadingVariables: boolean;
 };
 
 export function SessionControls({
@@ -66,8 +69,11 @@ export function SessionControls({
   canStart,
   onStart,
   onStop,
+  requiredVariables,
+  loadingVariables,
 }: Props) {
   const live = status === "live" || status === "starting";
+  const missing = requiredVariables.filter((name) => !config.dynamicVariables[name]?.trim());
 
   return (
     <Panel
@@ -194,6 +200,40 @@ export function SessionControls({
           </Field>
         </div>
 
+        {/* The API refuses a session that omits a variable its context requires,
+            so these are inputs, not an afterthought. */}
+        {requiredVariables.length > 0 && (
+          <div className="flex flex-col gap-2 rounded-xl border border-aurora-violet/25 bg-aurora-violet/5 p-2.5">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-aurora-violet">
+              Context variables
+            </span>
+            {requiredVariables.map((name) => (
+              <label key={name} className="flex items-center gap-2">
+                <code className="w-28 shrink-0 truncate font-mono text-[11px] text-ink-300">
+                  {`\${${name}}`}
+                </code>
+                <TextInput
+                  value={config.dynamicVariables[name] ?? ""}
+                  placeholder="value"
+                  className="py-1.5 text-xs"
+                  onChange={(event) =>
+                    onConfig({
+                      dynamicVariables: {
+                        ...config.dynamicVariables,
+                        [name]: event.target.value,
+                      },
+                    })
+                  }
+                />
+              </label>
+            ))}
+            <span className="text-[11px] leading-relaxed text-ink-400">
+              This context requires {requiredVariables.length === 1 ? "this value" : "these values"};
+              the session is rejected without {requiredVariables.length === 1 ? "it" : "them"}.
+            </span>
+          </div>
+        )}
+
         <Toggle
           checked={config.mic}
           onChange={(mic) => onConfig({ mic })}
@@ -212,7 +252,7 @@ export function SessionControls({
             <Button
               variant="primary"
               onClick={onStart}
-              disabled={!canStart || busy}
+              disabled={!canStart || busy || missing.length > 0 || loadingVariables}
               className="flex-1"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
@@ -223,6 +263,11 @@ export function SessionControls({
 
         {!config.avatarId && (
           <p className="text-[11px] text-ink-400">Choose an avatar to enable the session.</p>
+        )}
+        {missing.length > 0 && (
+          <p className="text-[11px] text-aurora-gold">
+            Fill in {missing.map((name) => `\${${name}}`).join(", ")} to start.
+          </p>
         )}
         {target === "device" && status === "offline" && config.avatarId && (
           <p className="text-[11px] text-ink-400">

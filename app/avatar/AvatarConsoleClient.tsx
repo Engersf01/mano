@@ -12,7 +12,13 @@ import Link from "next/link";
 import { BookOpen, Hand, Loader2, MonitorPlay, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { openChannel, sendMessage, type IncomingMessage } from "@/heygen/channel";
-import { fetchApiStatus, fetchAvatars, fetchContexts, fetchVoices } from "@/heygen/client";
+import {
+  fetchApiStatus,
+  fetchAvatars,
+  fetchContext,
+  fetchContexts,
+  fetchVoices,
+} from "@/heygen/client";
 import {
   OFFLINE_STATE,
   type DisplayMessage,
@@ -48,6 +54,8 @@ export default function AvatarConsoleClient() {
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [libraryError, setLibraryError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [requiredVariables, setRequiredVariables] = useState<string[]>([]);
+  const [loadingVariables, setLoadingVariables] = useState(false);
 
   const roomRef = useRef(room);
   roomRef.current = room;
@@ -88,6 +96,33 @@ export default function AvatarConsoleClient() {
   useEffect(() => {
     void loadLibrary();
   }, [loadLibrary]);
+
+  /**
+   * A context declares which `${...}` placeholders it needs, and the API refuses
+   * a session that omits one. The list endpoint doesn't carry them, so fetch the
+   * selected context to find out.
+   */
+  useEffect(() => {
+    if (!config.contextId) {
+      setRequiredVariables([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingVariables(true);
+    fetchContext(config.contextId)
+      .then((context) => {
+        if (!cancelled) setRequiredVariables(context.requiredDynamicVariables);
+      })
+      .catch(() => {
+        if (!cancelled) setRequiredVariables([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingVariables(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [config.contextId]);
 
   // ---- control channel --------------------------------------------------
   const handleDisplayMessage = useCallback(
@@ -339,6 +374,8 @@ export default function AvatarConsoleClient() {
                 canStart={canStart}
                 onStart={start}
                 onStop={stop}
+                requiredVariables={requiredVariables}
+                loadingVariables={loadingVariables}
               />
             </div>
 

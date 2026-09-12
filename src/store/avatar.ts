@@ -26,6 +26,11 @@ export type AvatarConfig = {
   speed: number;
   /** Capture audio on whichever machine renders the avatar. */
   mic: boolean;
+  /**
+   * Values for the `${...}` placeholders a context declares. The API rejects a
+   * session that omits one the context requires.
+   */
+  dynamicVariables: Record<string, string>;
 };
 
 const DEFAULT_CONFIG: AvatarConfig = {
@@ -37,6 +42,7 @@ const DEFAULT_CONFIG: AvatarConfig = {
   interactivity: "CONVERSATIONAL",
   speed: 1,
   mic: false,
+  dynamicVariables: {},
 };
 
 const STORAGE_KEY = "mano-avatar-config";
@@ -132,5 +138,7 @@ export function toSessionRequest(config: AvatarConfig): SessionRequest & { mic: 
     interactivity: config.interactivity,
     speed: config.speed,
     mic: config.mic,
+    dynamicVariables:
+      Object.keys(config.dynamicVariables).length > 0 ? config.dynamicVariables : undefined,
   };
 }

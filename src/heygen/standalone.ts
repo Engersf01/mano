@@ -50,6 +50,12 @@ export function parseStandaloneParams(search: string): StandaloneConfig {
 
   if (!avatarId) return { request: null, settings };
 
+  // Dynamic variables travel as var.<name>=<value>.
+  const dynamicVariables: Record<string, string> = {};
+  for (const [key, value] of params) {
+    if (key.startsWith("var.") && key.length > 4) dynamicVariables[key.slice(4)] = value;
+  }
+
   const quality = params.get("quality") as VideoQuality | null;
   const interactivity: Interactivity =
     params.get("mode") === "PUSH_TO_TALK" ? "PUSH_TO_TALK" : "CONVERSATIONAL";
@@ -65,6 +71,7 @@ export function parseStandaloneParams(search: string): StandaloneConfig {
       interactivity,
       speed: num(params.get("speed"), 1, 0.8, 1.2),
       mic: flag(params.get("mic"), false),
+      ...(Object.keys(dynamicVariables).length > 0 ? { dynamicVariables } : {}),
     },
   };
 }
@@ -85,6 +92,9 @@ export function buildStandaloneUrl(
   if (request.interactivity === "PUSH_TO_TALK") params.set("mode", "PUSH_TO_TALK");
   if (request.speed !== undefined && request.speed !== 1) params.set("speed", String(request.speed));
   if (request.mic) params.set("mic", "1");
+  for (const [key, value] of Object.entries(request.dynamicVariables ?? {})) {
+    if (value) params.set(`var.${key}`, value);
+  }
 
   // Only non-default framing travels, to keep the link readable.
   if (settings.fit !== DEFAULT_DISPLAY_SETTINGS.fit) params.set("fit", settings.fit as DisplayFit);
