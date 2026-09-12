@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils";
 import type { ChromaSettings, DisplayFit, DisplaySettings } from "@/heygen/protocol";
 import { Field, Panel, Toggle } from "./primitives";
 
-const BACKGROUNDS = ["#03040c", "#070815", "#0d1020", "#ffffff", "#00b140"];
+// Pure black first — it is the default and the one a holographic panel wants.
+const BACKGROUNDS = ["#000000", "#03040c", "#0d1020", "#ffffff", "#00b140"];
 
 export function StageSettings({
   settings,

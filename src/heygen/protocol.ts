@@ -26,7 +26,12 @@ export type ChromaSettings = {
 };
 
 export const DEFAULT_CHROMA: ChromaSettings = {
-  enabled: false,
+  /**
+   * On by default: the panel this is built for is holographic, and the avatars
+   * arrive on a green backdrop. Keying it to black is the look you want, so it
+   * shouldn't need a query parameter. Pass `chroma=0` for the raw feed.
+   */
+  enabled: true,
   keyColor: "#00b140",
   similarity: 0.4,
   smoothness: 0.08,
@@ -50,7 +55,9 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   fit: "cover",
   mirror: false,
   showCaptions: false,
-  background: "#03040c",
+  // Pure black, not Mano's near-black ink: an emissive panel still lights a
+  // #03040c pixel, and the point of the key is that the backdrop emits nothing.
+  background: "#000000",
   scale: 1,
   chroma: DEFAULT_CHROMA,
 };
