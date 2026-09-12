@@ -62,14 +62,19 @@ export function AvatarStage({
         }}
       />
 
-      {/* A soft rim that pulses while the avatar talks — readable from across a room. */}
+      {/* A soft rim that pulses while the avatar talks — readable from across a
+          room. A radial vignette rather than an inset shadow: negative spread on
+          a box-shadow draws a visible rounded rectangle instead of a glow. */}
       <div
         aria-hidden
         className={cn(
           "pointer-events-none absolute inset-0 transition-opacity duration-500",
           speaking ? "opacity-100" : "opacity-0",
         )}
-        style={{ boxShadow: "inset 0 0 120px -20px rgba(96, 245, 255, 0.55)" }}
+        style={{
+          background:
+            "radial-gradient(120% 100% at 50% 50%, transparent 52%, rgba(96, 245, 255, 0.30) 100%)",
+        }}
       />
 
       {!showVideo && (
