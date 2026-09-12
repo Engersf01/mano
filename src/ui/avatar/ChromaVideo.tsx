@@ -26,7 +26,8 @@ void main() {
 /**
  * Keying happens in chroma (Cb/Cr) space rather than RGB: it separates hue from
  * brightness, so shadows on the backdrop and highlights on the subject key the
- * same way, and skin tones stay put.
+ * same way, and skin tones stay put. The distance is normalised against the key
+ * colour's own chroma magnitude — see the comment in main().
  */
 const FRAGMENT_SHADER = `
 precision mediump float;
@@ -46,7 +47,19 @@ vec2 chroma(vec3 c) {
 
 void main() {
   vec4 px = texture2D(u_tex, v_uv);
-  float d = distance(chroma(px.rgb), chroma(u_key));
+  vec2 keyChroma = chroma(u_key);
+
+  /**
+   * Normalised distance: 0 at the key colour, 1 at neutral grey.
+   *
+   * Raw Cb/Cr distance is a trap. Every desaturated pixel — black hair, a dark
+   * suit, a white shirt — sits at exactly |keyChroma| from the key (0.33 for
+   * standard green), so a raw threshold above that erases all of them and
+   * leaves only saturated skin. Dividing by the key's own magnitude puts
+   * neutral at a fixed 1.0, so any threshold below 1 keeps them, whatever key
+   * colour is chosen.
+   */
+  float d = distance(chroma(px.rgb), keyChroma) / max(length(keyChroma), 1e-4);
   float alpha = smoothstep(u_similarity, u_similarity + u_smoothness, d);
 
   // Spill suppression: near the edges the backdrop bleeds green onto hair and

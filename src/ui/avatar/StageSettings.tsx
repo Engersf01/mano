@@ -108,11 +108,14 @@ export function StageSettings({
                 </div>
               </Field>
 
-              <Field label={`Strength · ${settings.chroma.similarity.toFixed(2)}`}>
+              <Field
+                label={`Strength · ${settings.chroma.similarity.toFixed(2)}`}
+                hint="0 = only the exact key colour, 1 = everything unsaturated. Stay below 1."
+              >
                 <input
                   type="range"
-                  min={0.05}
-                  max={0.8}
+                  min={0.1}
+                  max={0.9}
                   step={0.01}
                   value={settings.chroma.similarity}
                   onChange={(event) => patchChroma({ similarity: Number(event.target.value) })}

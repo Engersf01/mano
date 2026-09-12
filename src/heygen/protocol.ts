@@ -33,8 +33,13 @@ export const DEFAULT_CHROMA: ChromaSettings = {
    */
   enabled: true,
   keyColor: "#00b140",
-  similarity: 0.4,
-  smoothness: 0.08,
+  /**
+   * A fraction of the way from the key colour (0) to neutral grey (1), so it
+   * must stay below 1 or desaturated pixels start disappearing. 0.45 keys the
+   * backdrop and its shadows with room to spare.
+   */
+  similarity: 0.45,
+  smoothness: 0.1,
   spill: 0.5,
 };
 
