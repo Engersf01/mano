@@ -41,6 +41,50 @@ Two routes:
 
 4. Create a context under **Knowledge**, select an avatar, press **Start session**.
 
+## Standalone panel links
+
+A link carrying `?avatar=<id>` runs the panel on its own: it starts that session
+itself on the activation tap, with no console and no control channel.
+
+```
+/avatar/display?avatar=<id>&context=<id>&voice=<id>&lang=en&mic=1
+```
+
+| Param | Meaning |
+|---|---|
+| `avatar` | Avatar id — **presence of this is what enables standalone mode** |
+| `context` | Knowledge context id |
+| `voice` | Voice id (defaults to the avatar's own) |
+| `lang` | Language code, default `en` |
+| `quality` | `low` · `medium` · `high` (default) · `very_high` |
+| `mode` | `CONVERSATIONAL` (default) or `PUSH_TO_TALK` |
+| `speed` | Voice rate, 0.8–1.2 |
+| `mic` | `1` to listen through the panel's microphone |
+| `fit` `mirror` `captions` `bg` `scale` | Framing, same meanings as the console's Framing panel |
+
+The console builds this link for you — see **Standalone link** in the Display
+panel, which bakes in whatever avatar, voice and context are currently selected.
+
+**This is the only mode that works on serverless hosting.** The control channel
+needs one shared process; a standalone panel needs no channel at all, so it
+skips it entirely rather than holding an SSE stream open against a platform that
+would keep recycling it.
+
+## Deploying it somewhere the panel can reach
+
+To test on the device against a deployed build rather than this machine:
+
+1. Set `LIVEAVATAR_API_KEY` in the host's environment variables.
+2. Make the deployment publicly reachable. Vercel preview deployments are behind
+   **Deployment Protection** by default — the panel will hit an SSO login wall
+   instead of the app. Disable it for the project, or use a protection-bypass
+   token.
+3. Open the **standalone link** on the panel. Remote control from the console
+   will not work there (see above); the panel runs itself.
+
+Deployed over HTTPS, the microphone and the screen wake lock both work — which
+they cannot do over plain `http://` on a LAN.
+
 ## Why the panel needs a tap
 
 The avatar's voice arrives as audio on a `<video>` element. Mobile browsers
@@ -123,6 +167,7 @@ src/heygen/api.ts                   server REST client — the only reader of th
 src/heygen/normalize.ts             wire snake_case ↔ app camelCase + validation
 src/heygen/useAvatarSession.ts      React wrapper around LiveAvatarSession
 src/heygen/protocol.ts              the console ↔ display message vocabulary
+src/heygen/standalone.ts            standalone link build/parse
 src/server/channel.ts               in-process pub/sub broker
 src/store/avatar.ts                 operator config, persisted to localStorage
 src/ui/avatar/*                     console panels and the shared video stage

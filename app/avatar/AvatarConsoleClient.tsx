@@ -385,6 +385,8 @@ export default function AvatarConsoleClient() {
                 onRoomChange={store.setRoom}
                 micWanted={config.mic}
                 displayPeers={peers.display}
+                request={toSessionRequest(config)}
+                settings={settings}
               />
               <StageSettings settings={settings} onChange={patchSettings} />
               <TranscriptFeed entries={transcript} onClear={store.clearTranscript} />

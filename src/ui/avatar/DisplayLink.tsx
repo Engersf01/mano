@@ -4,8 +4,11 @@
  * Android browser, plus the one caveat that bites (mic needs a secure origin).
  */
 import { useCallback, useEffect, useState } from "react";
-import { Check, Copy, ExternalLink, MonitorSmartphone, TriangleAlert } from "lucide-react";
+import { Check, Copy, ExternalLink, Link2, MonitorSmartphone, TriangleAlert } from "lucide-react";
 import { fetchDisplayUrl } from "@/heygen/client";
+import type { DisplaySettings } from "@/heygen/protocol";
+import { buildStandaloneUrl } from "@/heygen/standalone";
+import type { SessionRequest } from "@/heygen/types";
 import { Button, Panel, TextInput } from "./primitives";
 
 type Props = {
@@ -14,9 +17,19 @@ type Props = {
   /** Whether the operator is asking the panel to listen. */
   micWanted: boolean;
   displayPeers: number;
+  /** Current session config, baked into the standalone link. */
+  request: SessionRequest & { mic: boolean };
+  settings: DisplaySettings;
 };
 
-export function DisplayLink({ room, onRoomChange, micWanted, displayPeers }: Props) {
+export function DisplayLink({
+  room,
+  onRoomChange,
+  micWanted,
+  displayPeers,
+  request,
+  settings,
+}: Props) {
   const [candidates, setCandidates] = useState<string[]>([]);
   const [origin, setOrigin] = useState("");
   const [path, setPath] = useState("/avatar/display");
@@ -53,6 +66,11 @@ export function DisplayLink({ room, onRoomChange, micWanted, displayPeers }: Pro
   }, []);
 
   const urls = candidates.length > 0 ? candidates : [`${origin}${path}`];
+  // Prefer a LAN address for the panel; fall back to this browser's origin.
+  const linkOrigin = candidates[0]
+    ? new URL(candidates[0]).origin
+    : origin || (typeof window === "undefined" ? "" : window.location.origin);
+  const standaloneUrl = buildStandaloneUrl(linkOrigin, room, request, settings);
 
   return (
     <Panel
@@ -111,6 +129,43 @@ export function DisplayLink({ room, onRoomChange, micWanted, displayPeers }: Pro
             <MonitorSmartphone size={14} /> Open display window
             <ExternalLink size={11} className="opacity-50" />
           </a>
+        </div>
+
+        {/* A link that needs no console at all — the only thing that works when
+            the app is deployed serverless, since the broker can't be shared. */}
+        <div className="flex flex-col gap-1.5 border-t border-white/5 pt-3">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-ink-400">
+            Standalone link
+          </span>
+          {request.avatarId ? (
+            <>
+              <div className="flex items-center gap-1.5">
+                <code className="min-w-0 flex-1 truncate rounded-xl border border-white/10 bg-ink-900/70 px-2.5 py-1.5 font-mono text-[11px] text-ink-100">
+                  {standaloneUrl}
+                </code>
+                <Button
+                  className="shrink-0 px-2 py-1.5"
+                  title="Copy standalone link"
+                  onClick={() => void copy(standaloneUrl)}
+                >
+                  {copied === standaloneUrl ? (
+                    <Check size={12} className="text-aurora-cyan" />
+                  ) : (
+                    <Link2 size={12} />
+                  )}
+                </Button>
+              </div>
+              <span className="text-[11px] leading-relaxed text-ink-400">
+                Carries the current avatar, voice and knowledge. The panel starts the session
+                itself on the activation tap — no console, no control channel. Use this when the
+                app is deployed rather than run on this machine.
+              </span>
+            </>
+          ) : (
+            <span className="text-[11px] text-ink-500">
+              Pick an avatar to generate a link the panel can run on its own.
+            </span>
+          )}
         </div>
 
         {micWanted && !secure && (

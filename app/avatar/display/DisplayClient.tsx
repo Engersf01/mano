@@ -5,6 +5,11 @@
  * It owns the HeyGen session (the video and audio have to land where the screen
  * and speakers are) and takes its orders from the console over the SSE channel.
  * Nothing here is interactive beyond the one tap needed to unlock audio.
+ *
+ * A link carrying `?avatar=<id>` runs standalone instead: the panel starts that
+ * session itself on the activation tap, with no console and no control channel.
+ * That is the only mode that works on serverless hosting, where the two halves
+ * can land on different instances.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MonitorPlay, Wifi, WifiOff } from "lucide-react";
@@ -16,6 +21,7 @@ import {
   type DisplayState,
   type TranscriptEntry,
 } from "@/heygen/protocol";
+import { parseStandaloneParams } from "@/heygen/standalone";
 import { micBlockedReason, useAvatarSession } from "@/heygen/useAvatarSession";
 import type { SessionRequest } from "@/heygen/types";
 import { AvatarStage } from "@/ui/avatar/AvatarStage";
@@ -30,11 +36,17 @@ export default function DisplayClient() {
   const [settings, setSettings] = useState<DisplaySettings>(DEFAULT_DISPLAY_SETTINGS);
   const [caption, setCaption] = useState<string | null>(null);
 
+  const [standalone, setStandalone] = useState(false);
   const roomRef = useRef("default");
   const wakeLockRef = useRef<WakeLock | null>(null);
+  /** Session config parsed from a standalone link, applied on the activation tap. */
+  const autoStartRef = useRef<(SessionRequest & { mic: boolean }) | null>(null);
+
+  const standaloneRef = useRef(false);
 
   const publishTranscript = useCallback((entry: TranscriptEntry) => {
     if (entry.role === "avatar") setCaption(entry.text);
+    if (standaloneRef.current) return;
     void sendMessage(roomRef.current, "display", "transcript", entry).catch(() => {});
   }, []);
 
@@ -48,11 +60,29 @@ export default function DisplayClient() {
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
-  // The room travels in the query string so one server can drive several panels.
+  // The room travels in the query string so one server can drive several panels;
+  // a standalone link carries the whole session config alongside it.
   useEffect(() => {
-    const value = new URLSearchParams(window.location.search).get("room")?.trim() || "default";
+    const search = window.location.search;
+    const value = new URLSearchParams(search).get("room")?.trim() || "default";
     roomRef.current = value;
     setRoom(value);
+
+    const parsed = parseStandaloneParams(search);
+    setSettings(parsed.settings);
+    autoStartRef.current = parsed.request;
+    standaloneRef.current = Boolean(parsed.request);
+    setStandalone(Boolean(parsed.request));
+  }, []);
+
+  /**
+   * The tap both unlocks audio and, on a standalone link, starts the session —
+   * one gesture, because the browser only trusts the first one.
+   */
+  const activate = useCallback(() => {
+    setActivated(true);
+    const request = autoStartRef.current;
+    if (request) void sessionRef.current.start(request);
   }, []);
 
   const blockedReason = useMemo(() => (activated ? micBlockedReason() : null), [activated]);
@@ -124,9 +154,11 @@ export default function DisplayClient() {
   }, []);
 
   // Subscribe only after activation, so a panel sitting on the tap gate can't be
-  // told to start a session it has no permission to play.
+  // told to start a session it has no permission to play. A standalone panel
+  // skips the channel entirely — it has no console to answer to, and holding an
+  // SSE stream open on serverless would just burn function time reconnecting.
   useEffect(() => {
-    if (!activated) return;
+    if (!activated || standalone) return;
     return openChannel({
       room: roomRef.current,
       role: "display",
@@ -134,13 +166,13 @@ export default function DisplayClient() {
       onReady: () => setConnected(true),
       onError: () => setConnected(false),
     });
-  }, [activated, handleCommand]);
+  }, [activated, handleCommand, standalone]);
 
   // Mirror our state up to the console on every change.
   useEffect(() => {
-    if (!activated) return;
+    if (!activated || standalone) return;
     void sendMessage(roomRef.current, "display", "state", state).catch(() => setConnected(false));
-  }, [activated, state]);
+  }, [activated, standalone, state]);
 
   /** Kiosk panels shouldn't dim mid-conversation. Secure contexts only. */
   const acquireWakeLock = useCallback(async () => {
@@ -176,7 +208,7 @@ export default function DisplayClient() {
     return (
       <button
         type="button"
-        onClick={() => setActivated(true)}
+        onClick={activate}
         className="flex h-screen w-screen flex-col items-center justify-center gap-6 bg-ink-950 px-8 text-center"
       >
         <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-aurora-cyan/15 text-aurora-cyan">
@@ -186,6 +218,7 @@ export default function DisplayClient() {
         <span className="max-w-sm text-sm text-ink-300">
           Tap anywhere to activate. The browser needs one touch before it will play the
           avatar&rsquo;s voice.
+          {standalone && " This link starts its own session — no console needed."}
         </span>
         <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-ink-200">
           room · {room}
@@ -221,15 +254,18 @@ export default function DisplayClient() {
         }
       />
 
-      {/* A small, unobtrusive link state so a dark panel isn't ambiguous. */}
-      <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-ink-300 backdrop-blur">
-        {connected ? (
-          <Wifi size={11} className="text-aurora-cyan" />
-        ) : (
-          <WifiOff size={11} className="text-aurora-pink" />
-        )}
-        {connected ? "linked" : "reconnecting"}
-      </div>
+      {/* A small, unobtrusive link state so a dark panel isn't ambiguous.
+          A standalone panel has no console, so there is nothing to report. */}
+      {!standalone && (
+        <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-ink-300 backdrop-blur">
+          {connected ? (
+            <Wifi size={11} className="text-aurora-cyan" />
+          ) : (
+            <WifiOff size={11} className="text-aurora-pink" />
+          )}
+          {connected ? "linked" : "reconnecting"}
+        </div>
+      )}
     </main>
   );
 }
