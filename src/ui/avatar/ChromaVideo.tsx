@@ -98,6 +98,60 @@ function hexToRgb(hex: string): [number, number, number] {
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
+/** How saturated a sampled corner must be to count as a chroma backdrop. */
+const MIN_BACKDROP_CHROMA = 0.06;
+
+function chromaMagnitude([r, g, b]: [number, number, number]) {
+  const cb = r * -0.169 + g * -0.331 + b * 0.5;
+  const cr = r * 0.5 + g * -0.419 + b * -0.081;
+  return Math.hypot(cb, cr);
+}
+
+/**
+ * Read the backdrop colour off the feed itself.
+ *
+ * Hard-coding a green is a trap: broadcast green, pure green and everything
+ * between are far enough apart in chroma that a key tuned for one leaves the
+ * others on screen. The top corners of a centred presenter are backdrop, so
+ * sample those and key whatever is actually there.
+ *
+ * Returns null when the corners aren't saturated enough to be a chroma
+ * backdrop — an avatar delivered on black needs no keying at all.
+ */
+function detectKeyColor(video: HTMLVideoElement): [number, number, number] | null {
+  const size = 64;
+  const probe = document.createElement("canvas");
+  probe.width = size;
+  probe.height = size;
+  const ctx = probe.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+
+  try {
+    ctx.drawImage(video, 0, 0, size, size);
+    const band = Math.max(2, Math.round(size * 0.12));
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let n = 0;
+    // Top-left and top-right only: shoulders can reach the bottom corners.
+    for (const x0 of [0, size - band]) {
+      const { data } = ctx.getImageData(x0, 0, band, band);
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i];
+        g += data[i + 1];
+        b += data[i + 2];
+        n += 1;
+      }
+    }
+    if (n === 0) return null;
+    const rgb: [number, number, number] = [r / n / 255, g / n / 255, b / n / 255];
+    return chromaMagnitude(rgb) < MIN_BACKDROP_CHROMA ? null : rgb;
+  } catch {
+    // A tainted canvas would throw; fall back to the configured colour.
+    return null;
+  }
+}
+
 type Props = {
   video: HTMLVideoElement | null;
   settings: ChromaSettings;
@@ -192,18 +246,36 @@ export function ChromaVideo({
     let running = true;
     let rafId = 0;
     let frameHandle = 0;
+    /** Sampled once per stream; null until the first usable frame arrives. */
+    let detected: [number, number, number] | null = null;
+    let detectionAttempts = 0;
 
     const draw = () => {
       if (!running) return;
       const current = settingsRef.current;
+      const auto = current.keyColor === "auto";
 
       if (video.readyState >= 2 && video.videoWidth > 0) {
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
           gl.viewport(0, 0, canvas.width, canvas.height);
+          // New stream dimensions mean a new session: sample again.
+          detected = null;
+          detectionAttempts = 0;
         }
-        gl.uniform3fv(uKey, hexToRgb(current.keyColor));
+
+        if (auto && !detected && detectionAttempts < 30) {
+          detectionAttempts += 1;
+          detected = detectKeyColor(video);
+          // Corners aren't a chroma backdrop — nothing to key, show the video.
+          if (!detected && detectionAttempts >= 30) {
+            fail();
+            return;
+          }
+        }
+
+        gl.uniform3fv(uKey, auto ? (detected ?? [0, 0.694, 0.251]) : hexToRgb(current.keyColor));
         gl.uniform1f(uSimilarity, current.similarity);
         gl.uniform1f(uSmoothness, current.smoothness);
         gl.uniform1f(uSpill, current.spill);

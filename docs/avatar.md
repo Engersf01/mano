@@ -62,7 +62,7 @@ itself on the activation tap, with no console and no control channel.
 | `mic` | `1` to listen through the panel's microphone |
 | `fit` `mirror` `captions` `bg` `scale` | Framing, same meanings as the console's Framing panel (`bg` defaults to pure black) |
 | `chroma` | Green-backdrop removal. **On by default** — pass `chroma=0` for the raw feed |
-| `key` | Backdrop colour to remove, hex without `#` (default `00b140`) |
+| `key` | Backdrop colour to remove, hex without `#`. Omit it and the colour is **sampled from the feed** — set this only if detection picks wrong |
 | `similarity` | Key strength as a fraction from the key colour (0) to neutral grey (1). Must stay below 1 or unsaturated pixels vanish. Default `0.45` |
 | `smoothness` `spill` | Edge softness and green-spill removal (0–1) |
 
@@ -112,7 +112,14 @@ skin tones survive. The distance is **normalised against the key colour's own
 chroma magnitude**, which is what makes it safe: every desaturated pixel — black
 hair, a dark suit, a white shirt — sits at exactly that magnitude from the key,
 so a raw threshold above it erases all of them and leaves only saturated skin.
-Normalising puts neutral at a fixed 1.0, so any `similarity` below 1 keeps them. Spill suppression pulls the green fringe off hair and
+Normalising puts neutral at a fixed 1.0, so any `similarity` below 1 keeps them.
+
+The **key colour is sampled from the feed's top corners**, not hard-coded.
+Broadcast green (`#00b140`) and pure green (`#00ff00`) are 0.77 apart on that
+normalised scale, so a key tuned for one leaves the other on screen — and which
+green an avatar ships on is not something to guess. If the corners aren't
+saturated enough to be a chroma backdrop, nothing is keyed and the raw video is
+shown, so an avatar delivered on black is left alone. Spill suppression pulls the green fringe off hair and
 shoulders. If WebGL is unavailable the page falls back to the raw video rather
 than showing nothing.
 
