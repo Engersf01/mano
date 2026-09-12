@@ -13,6 +13,7 @@ Open `/` to land. From there you can:
 - **Run calibration** — `/calibrate` walks you through the gesture vocabulary while the camera is live.
 - **Open the stage** — `/present` is the full presenter view: 3D scene, presenter notes, camera tile with hand overlay, AI panel, control dock.
 - **Audience window** — click *Audience* on the dock to pop out a clean `/audience` route on a second monitor.
+- **Avatar console** — `/avatar` drives a HeyGen LiveAvatar on an attached Android display and manages its knowledge. See [docs/avatar.md](docs/avatar.md).
 
 ## Stack
 
@@ -26,6 +27,7 @@ Open `/` to land. From there you can:
 | State | Zustand (5 stores, subscribe-with-selector) |
 | Motion | Framer Motion + GSAP-style easing built into transitions |
 | AI | OpenAI (optional) → falls back to local heuristic intent router |
+| Interactive avatar | HeyGen LiveAvatar (`@heygen/liveavatar-web-sdk`, WebRTC) |
 
 ## Architecture (six layers)
 
@@ -90,6 +92,10 @@ npm run typecheck
 
 Set `OPENAI_API_KEY` in `.env.local` to enable the AI assistant; without it, Mano falls back to local heuristics.
 
+Set `HEYGEN_API_KEY` to enable the avatar console at `/avatar`. To drive a panel
+on another device, bind the dev server to the network with
+`npm run dev -- --hostname 0.0.0.0`.
+
 ## Performance
 
 - Hand detection runs in a Web Worker with GPU delegate
@@ -109,7 +115,10 @@ app/
   present/                     presenter view (camera + HUD + stage)
   audience/                    clean audience render
   calibrate/                   gesture walkthrough
+  avatar/                      HeyGen avatar console + display route
   api/ai/route.ts              edge AI assistant
+  api/heygen/                  session tokens, avatars, voices, knowledge CRUD
+  api/avatar/                  console ↔ display control channel
 src/
   perception/                  MediaPipe worker + hook
   gestures/                    1€ filter, detectors, engine, intents
@@ -117,6 +126,8 @@ src/
   scenes/                      R3F Stage, primitives, six modes
   ui/                          presenter chrome, tools, overlays
   ai/                          speech, coach
+  heygen/                      LiveAvatar REST client, SDK hook, channel
+  server/channel.ts            in-process console ↔ display broker
   lib/                         webcam, idb, utils
   data/sampleDeck.ts           the demo deck
 ```
