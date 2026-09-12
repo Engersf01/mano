@@ -63,7 +63,8 @@ itself on the activation tap, with no console and no control channel.
 | `fit` `mirror` `captions` `bg` `scale` | Framing, same meanings as the console's Framing panel (`bg` defaults to pure black) |
 | `chroma` | Green-backdrop removal. **On by default** — pass `chroma=0` for the raw feed |
 | `key` | Backdrop colour to remove, hex without `#` (default `00b140`) |
-| `similarity` `smoothness` `spill` | Key strength, edge softness, green-spill removal (0–1) |
+| `similarity` | Key strength as a fraction from the key colour (0) to neutral grey (1). Must stay below 1 or unsaturated pixels vanish. Default `0.45` |
+| `smoothness` `spill` | Edge softness and green-spill removal (0–1) |
 
 The console builds this link for you — see **Standalone link** in the Display
 panel, which bakes in whatever avatar, voice and context are currently selected.
@@ -107,7 +108,11 @@ else behind the avatar.
 
 The key runs as a WebGL shader over the video, in chroma (Cb/Cr) space rather
 than RGB so shadows on the backdrop and highlights on the subject key alike and
-skin tones survive. Spill suppression pulls the green fringe off hair and
+skin tones survive. The distance is **normalised against the key colour's own
+chroma magnitude**, which is what makes it safe: every desaturated pixel — black
+hair, a dark suit, a white shirt — sits at exactly that magnitude from the key,
+so a raw threshold above it erases all of them and leaves only saturated skin.
+Normalising puts neutral at a fixed 1.0, so any `similarity` below 1 keeps them. Spill suppression pulls the green fringe off hair and
 shoulders. If WebGL is unavailable the page falls back to the raw video rather
 than showing nothing.
 
