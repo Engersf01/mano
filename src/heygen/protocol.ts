@@ -32,7 +32,13 @@ export const DEFAULT_CHROMA: ChromaSettings = {
    * shouldn't need a query parameter. Pass `chroma=0` for the raw feed.
    */
   enabled: true,
-  keyColor: "#00b140",
+  /**
+   * "auto" samples the backdrop from the feed's top corners. Hard-coding a
+   * green does not survive contact with reality — broadcast green and pure
+   * green are far enough apart in chroma that a key tuned for one leaves the
+   * other on screen. A hex value here overrides the sampling.
+   */
+  keyColor: "auto",
   /**
    * A fraction of the way from the key colour (0) to neutral grey (1), so it
    * must stay below 1 or desaturated pixels start disappearing. 0.45 keys the

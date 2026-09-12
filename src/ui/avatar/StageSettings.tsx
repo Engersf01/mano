@@ -94,19 +94,27 @@ export function StageSettings({
 
           {settings.chroma.enabled && (
             <>
-              <Field label="Key colour" hint="Sample the backdrop if it isn't standard green.">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={settings.chroma.keyColor}
-                    onChange={(event) => patchChroma({ keyColor: event.target.value })}
-                    className="h-7 w-9 cursor-pointer rounded-lg border border-white/15 bg-transparent"
-                  />
-                  <code className="font-mono text-[11px] text-ink-300">
-                    {settings.chroma.keyColor}
-                  </code>
-                </div>
-              </Field>
+              <Toggle
+                checked={settings.chroma.keyColor === "auto"}
+                onChange={(auto) => patchChroma({ keyColor: auto ? "auto" : "#00b140" })}
+                label="Detect backdrop colour from the feed"
+              />
+
+              {settings.chroma.keyColor !== "auto" && (
+                <Field label="Key colour" hint="Set this only if detection picks the wrong colour.">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={settings.chroma.keyColor}
+                      onChange={(event) => patchChroma({ keyColor: event.target.value })}
+                      className="h-7 w-9 cursor-pointer rounded-lg border border-white/15 bg-transparent"
+                    />
+                    <code className="font-mono text-[11px] text-ink-300">
+                      {settings.chroma.keyColor}
+                    </code>
+                  </div>
+                </Field>
+              )}
 
               <Field
                 label={`Strength · ${settings.chroma.similarity.toFixed(2)}`}
