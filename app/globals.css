@@ -11,6 +11,12 @@
 
 html,
 body {
+  /* Android WebViews and Chrome's text scaling inflate font sizes on their
+     own, which on a kiosk panel turns a paragraph into three words per line
+     spilling off the screen. The panel is not a document being read at arm's
+     length; it renders what it is told to render. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   background: #03040c;
   color: #f5f7fb;
   height: 100%;
