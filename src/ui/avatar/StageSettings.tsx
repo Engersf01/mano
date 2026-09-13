@@ -157,6 +157,28 @@ export function StageSettings({
             </>
           )}
         </div>
+        {/* A panel left alone mid-conversation would otherwise greet the next
+            person inside the last one's chat, by their name. */}
+        <Field
+          label="Restart after silence"
+          hint="Seconds of quiet before the conversation starts fresh. 0 never restarts on its own."
+        >
+          <div className="flex items-center gap-2">
+            <input
+              type="range"
+              min={0}
+              max={300}
+              step={15}
+              value={Math.min(settings.idleResetSeconds, 300)}
+              onChange={(event) => onChange({ idleResetSeconds: Number(event.target.value) })}
+              className="mt-2 h-1 w-full cursor-pointer appearance-none rounded-full bg-white/15 accent-aurora-cyan"
+            />
+            <code className="w-16 shrink-0 text-right font-mono text-[11px] text-ink-300">
+              {settings.idleResetSeconds > 0 ? `${settings.idleResetSeconds}s` : "off"}
+            </code>
+          </div>
+        </Field>
+
         <Toggle
           checked={settings.showCaptions}
           onChange={(showCaptions) => onChange({ showCaptions })}

@@ -1,6 +1,13 @@
 "use client";
 /** Persona + transport settings, and the start/stop switch for the session. */
-import { Loader2, MonitorSmartphone, Play, Square, SquareArrowOutUpRight } from "lucide-react";
+import {
+  Loader2,
+  MonitorSmartphone,
+  Play,
+  RotateCcw,
+  Square,
+  SquareArrowOutUpRight,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DisplayStatus } from "@/heygen/protocol";
 import {
@@ -49,6 +56,8 @@ type Props = {
   canStart: boolean;
   onStart: () => void;
   onStop: () => void;
+  /** Drop this conversation and open a clean one for the next visitor. */
+  onReset: () => void;
   /** `${...}` placeholders the selected context declares as required. */
   requiredVariables: string[];
   loadingVariables: boolean;
@@ -69,6 +78,7 @@ export function SessionControls({
   canStart,
   onStart,
   onStop,
+  onReset,
   requiredVariables,
   loadingVariables,
 }: Props) {
@@ -244,10 +254,24 @@ export function SessionControls({
 
         <div className="flex items-center gap-2">
           {live ? (
-            <Button variant="danger" onClick={onStop} disabled={busy} className="flex-1">
-              {busy ? <Loader2 size={14} className="animate-spin" /> : <Square size={13} />}
-              End session
-            </Button>
+            <>
+              {/* The reset is the one an operator reaches for most: a session
+                  carries its whole history, so anything the avatar has got
+                  wrong about the person in front of it only clears with a new
+                  one. Ending the session leaves a dark panel instead. */}
+              <Button
+                variant="primary"
+                onClick={onReset}
+                disabled={busy || status !== "live"}
+                className="flex-1"
+              >
+                <RotateCcw size={13} /> New conversation
+              </Button>
+              <Button variant="danger" onClick={onStop} disabled={busy}>
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <Square size={13} />}
+                End
+              </Button>
+            </>
           ) : (
             <Button
               variant="primary"
@@ -260,6 +284,13 @@ export function SessionControls({
             </Button>
           )}
         </div>
+
+        {live && (
+          <p className="text-[11px] text-ink-400">
+            Restarts the greeting so the next visitor is met by name-free small talk. On the panel
+            itself, press and hold anywhere for a second and a half to do the same.
+          </p>
+        )}
 
         {!config.avatarId && (
           <p className="text-[11px] text-ink-400">Choose an avatar to enable the session.</p>

@@ -64,6 +64,13 @@ export type DisplaySettings = {
   /** 0.5–1.5 — trims the frame when the panel crops the edges. */
   scale: number;
   chroma: ChromaSettings;
+  /**
+   * Seconds of silence after which the conversation restarts for the next
+   * visitor. One LiveAvatar session is one conversation history, so a session
+   * that outlives its visitor greets the next one by the previous one's name.
+   * 0 disables the timer.
+   */
+  idleResetSeconds: number;
 };
 
 export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
@@ -75,6 +82,7 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   background: "#000000",
   scale: 1,
   chroma: DEFAULT_CHROMA,
+  idleResetSeconds: 90,
 };
 
 export type SpeakMode =
@@ -93,6 +101,8 @@ export type ConsoleCommand =
   | { type: "push-to-talk"; payload: { on: boolean } }
   | { type: "listening"; payload: { on: boolean } }
   | { type: "settings"; payload: Partial<DisplaySettings> }
+  /** End this conversation and start a clean one for the next visitor. */
+  | { type: "reset" }
   | { type: "reload" };
 
 export type DisplayStatus =

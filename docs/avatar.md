@@ -66,6 +66,7 @@ itself on the activation tap, with no console and no control channel.
 | `similarity` | Key strength as a fraction from the key colour (0) to neutral grey (1). Must stay below 1 or unsaturated pixels vanish. Default `0.45` |
 | `smoothness` | Softness of the key's edge (0–1) |
 | `spill` | Green-spill removal, applied to **every** pixel, not just the edge (0–1, default `0.8`) |
+| `idle` | Seconds of silence before the conversation restarts for the next visitor (default `90`, `0` disables) |
 
 The console builds this link for you — see **Standalone link** in the Display
 panel, which bakes in whatever avatar, voice and context are currently selected.
@@ -127,6 +128,36 @@ than showing nothing.
 Tune it live from the console's **Framing** panel, or with `key`, `similarity`,
 `smoothness` and `spill` in the link.
 
+## A fresh conversation for each visitor
+
+**One LiveAvatar session is one conversation history.** The avatar remembers
+everything said in it — the visitor's name above all — and nothing in the stream
+tells it that person walked away. So a session that outlives its visitor greets
+the next one *inside the last one's chat*, by the wrong name, and no amount of
+prompt wording fixes that: the session has to be replaced.
+
+Three ways to do it, all of which end the session and open a new one on the same
+avatar, voice and context, so the avatar replays its opening line:
+
+| | How | When to use it |
+|---|---|---|
+| **Idle timer** | Automatic after `idle` seconds of silence — 90 by default | The normal case: someone drifts off mid-conversation |
+| **Long press** | Hold anywhere on the panel for 1.5 s | The avatar is stuck — wrong name, wrong subject — and someone is standing there |
+| **Console** | **New conversation** in the Session panel | You're driving the panel from a laptop |
+
+The panel shows *Starting a new conversation…* while it reconnects, so a restart
+can't be mistaken for a frozen screen.
+
+Why a long press rather than a button: a kiosk has no controls and shouldn't grow
+any. A visible button is something a passer-by presses; a deliberate hold is
+invisible to visitors and hard to trigger by accident. Brief taps are ignored —
+they only restore fullscreen.
+
+The idle timer only fires on a **live** session, never mid-utterance, and never
+while a restart is already running; those conditions live in
+`src/heygen/idle.ts`. Set `idle=0` (or slide **Restart after silence** to *off*)
+for a session that must run untouched — a demo you're narrating yourself.
+
 ## Running chrome-free on the panel
 
 A browser address bar above the avatar ruins a kiosk. Two things address it:
@@ -184,6 +215,9 @@ over `/v1/contexts`.
 - Contexts are independent of avatars and voices, so one context can be paired
   with different faces.
 - Edits apply on the *next* session — restart to pick them up.
+- Write the opening line as an **instruction**, not as something already done.
+  A prompt saying "you have already asked their name" tells the model that
+  question is behind it, and it will skip straight past the greeting.
 
 ## Speaking
 
@@ -224,6 +258,7 @@ src/heygen/api.ts                   server REST client — the only reader of th
 src/heygen/normalize.ts             wire snake_case ↔ app camelCase + validation
 src/heygen/useAvatarSession.ts      React wrapper around LiveAvatarSession
 src/heygen/protocol.ts              the console ↔ display message vocabulary
+src/heygen/idle.ts                  when silence means the next visitor arrived
 src/heygen/standalone.ts            standalone link build/parse
 src/server/channel.ts               in-process pub/sub broker
 src/store/avatar.ts                 operator config, persisted to localStorage

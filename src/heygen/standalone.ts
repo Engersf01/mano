@@ -51,6 +51,12 @@ export function parseStandaloneParams(search: string): StandaloneConfig {
       ? `#${params.get("bg")!.replace(/^#/, "")}`
       : DEFAULT_DISPLAY_SETTINGS.background,
     scale: num(params.get("scale"), DEFAULT_DISPLAY_SETTINGS.scale, 0.5, 1.5),
+    idleResetSeconds: num(
+      params.get("idle"),
+      DEFAULT_DISPLAY_SETTINGS.idleResetSeconds,
+      0,
+      3600,
+    ),
     chroma: {
       enabled: flag(params.get("chroma"), DEFAULT_CHROMA.enabled),
       keyColor: params.get("key")
@@ -118,6 +124,9 @@ export function buildStandaloneUrl(
     params.set("bg", settings.background.replace(/^#/, ""));
   }
   if (settings.scale !== DEFAULT_DISPLAY_SETTINGS.scale) params.set("scale", String(settings.scale));
+  if (settings.idleResetSeconds !== DEFAULT_DISPLAY_SETTINGS.idleResetSeconds) {
+    params.set("idle", String(settings.idleResetSeconds));
+  }
 
   const chroma = settings.chroma;
   if (chroma.enabled) {
