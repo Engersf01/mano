@@ -61,6 +61,8 @@ itself on the activation tap, with no console and no control channel.
 | `speed` | Voice rate, 0.8–1.2 |
 | `mic` | `1` to listen through the panel's microphone |
 | `brand` | `0` to hide the stand lockup along the bottom (**on by default**) |
+| `reset` | `0` to hide the restart button in the panel's corner (**on by default**) |
+| `wake` | Spoken word that starts a fresh conversation, default `natalie`. `wake=0` disables it |
 | `fit` `mirror` `captions` `bg` `scale` | Framing, same meanings as the console's Framing panel (`bg` defaults to pure black) |
 | `chroma` | Green-backdrop removal. **On by default** — pass `chroma=0` for the raw feed |
 | `key` | Backdrop colour to remove, hex without `#`. Omit it and the colour is **sampled from the feed** — set this only if detection picks wrong |
@@ -183,6 +185,14 @@ The link parser therefore checks it against the known codes:
   **and says so on the activation screen**, which is the last moment a human is
   looking at the panel on purpose.
 
+**Always put `lang` in the link, even for English.** An absent `lang` silently
+means `en`, and that is not a visible decision: a Spanish stand once ran a whole
+conversation through an English recogniser because the parameter simply wasn't
+there. The avatar opened in Spanish, because the opening line is fixed text, and
+drifted into English the moment the model took over — which looks like the
+persona misbehaving rather than a missing query parameter. The console's link
+builder now always writes it out.
+
 There is no auto-detect: LiveAvatar's STT config exposes a provider and no
 language, so one session hears one language. An avatar told to switch languages
 mid-conversation will *speak* the second language fine, but keeps listening with
@@ -203,8 +213,18 @@ avatar, voice and context, so the avatar replays its opening line:
 | | How | When to use it |
 |---|---|---|
 | **Idle timer** | Automatic after `idle` seconds of silence — 90 by default | The normal case: someone drifts off mid-conversation |
-| **Long press** | Hold anywhere on the panel for 1.5 s | The avatar is stuck — wrong name, wrong subject — and someone is standing there |
+| **Button** | The small circle top right of the panel | You are standing at the stand and want it now |
+| **Keyboard** | `R`, `Space` or `Enter` (and `F` restores fullscreen) | A keyboard is attached — the fastest control there is |
+| **Wake word** | A visitor says *"Natalie"* after the panel has been quiet | Nobody has to touch anything: the next person just speaks |
+| **Long press** | Hold anywhere on the panel for 1.5 s | Nothing else is to hand |
 | **Console** | **New conversation** in the Session panel | You're driving the panel from a laptop |
+
+The wake word only counts **after `WAKE_AFTER_SILENCE_MS` (15 s) of quiet**, and
+that threshold is the whole safety of it: without it, "gracias, Natalie" said
+mid-conversation would wipe the conversation it was thanking. Someone saying her
+name into a panel that has been quiet is arriving, not replying. The rule lives
+in `isWakeCall` in `src/heygen/idle.ts`, next to the idle one and for the same
+reason — neither can be exercised in a browser without a live HeyGen session.
 
 The panel shows *Starting a new conversation…* while it reconnects, so a restart
 can't be mistaken for a frozen screen.

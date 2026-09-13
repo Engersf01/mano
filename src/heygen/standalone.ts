@@ -56,6 +56,14 @@ export function parseStandaloneParams(search: string): StandaloneConfig {
     mirror: flag(params.get("mirror"), DEFAULT_DISPLAY_SETTINGS.mirror),
     showCaptions: flag(params.get("captions"), DEFAULT_DISPLAY_SETTINGS.showCaptions),
     showBrand: flag(params.get("brand"), DEFAULT_DISPLAY_SETTINGS.showBrand),
+    showResetControl: flag(params.get("reset"), DEFAULT_DISPLAY_SETTINGS.showResetControl),
+    // `wake=0` turns it off; any other value is the word itself.
+    wakeWord:
+      params.get("wake") === null
+        ? DEFAULT_DISPLAY_SETTINGS.wakeWord
+        : params.get("wake") === "0"
+          ? ""
+          : params.get("wake")!.trim(),
     background: params.get("bg")
       ? `#${params.get("bg")!.replace(/^#/, "")}`
       : DEFAULT_DISPLAY_SETTINGS.background,
@@ -135,7 +143,10 @@ export function buildStandaloneUrl(
   if (request.avatarId) params.set("avatar", request.avatarId);
   if (request.contextId) params.set("context", request.contextId);
   if (request.voiceId) params.set("voice", request.voiceId);
-  if (request.language && request.language !== "en") params.set("lang", request.language);
+  // Always written out, even when it is the default: an absent `lang` is an
+  // invisible decision, and the one time it was absent here the panel ran a
+  // Spanish conversation through an English recogniser.
+  params.set("lang", request.language || "en");
   if (request.quality && request.quality !== "high") params.set("quality", request.quality);
   if (request.interactivity === "PUSH_TO_TALK") params.set("mode", "PUSH_TO_TALK");
   if (request.speed !== undefined && request.speed !== 1) params.set("speed", String(request.speed));
@@ -150,6 +161,10 @@ export function buildStandaloneUrl(
   if (settings.showCaptions) params.set("captions", "1");
   // On by default, so only the off switch needs to travel.
   if (!settings.showBrand) params.set("brand", "0");
+  if (!settings.showResetControl) params.set("reset", "0");
+  if (settings.wakeWord !== DEFAULT_DISPLAY_SETTINGS.wakeWord) {
+    params.set("wake", settings.wakeWord || "0");
+  }
   if (settings.background !== DEFAULT_DISPLAY_SETTINGS.background) {
     params.set("bg", settings.background.replace(/^#/, ""));
   }

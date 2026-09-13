@@ -61,6 +61,14 @@ export type DisplaySettings = {
   showCaptions: boolean;
   /** The stand's lockup along the bottom of the panel. */
   showBrand: boolean;
+  /** A small restart control in the panel's corner. */
+  showResetControl: boolean;
+  /**
+   * Spoken word that starts a fresh conversation when the panel has been quiet
+   * — how the next visitor gets her attention without touching anything. Empty
+   * disables it.
+   */
+  wakeWord: string;
   /** CSS color behind the avatar. */
   background: string;
   /** 0.5–1.5 — trims the frame when the panel crops the edges. */
@@ -82,6 +90,8 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   // On by default: a branded stand is the point of the panel, and nobody should
   // have to remember a query parameter to get the logo back.
   showBrand: true,
+  showResetControl: true,
+  wakeWord: "natalie",
   // Pure black, not Mano's near-black ink: an emissive panel still lights a
   // #03040c pixel, and the point of the key is that the backdrop emits nothing.
   background: "#000000",

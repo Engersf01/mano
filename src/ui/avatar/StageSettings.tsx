@@ -2,7 +2,7 @@
 /** Live framing controls for the panel — applied without restarting the session. */
 import { cn } from "@/lib/utils";
 import type { ChromaSettings, DisplayFit, DisplaySettings } from "@/heygen/protocol";
-import { Field, Panel, Toggle } from "./primitives";
+import { Field, Panel, TextInput, Toggle } from "./primitives";
 
 // Pure black first — it is the default and the one a holographic panel wants.
 const BACKGROUNDS = ["#000000", "#03040c", "#0d1020", "#ffffff", "#00b140"];
@@ -184,6 +184,23 @@ export function StageSettings({
           onChange={(showBrand) => onChange({ showBrand })}
           label="Show the nxT · Natalie lockup"
         />
+
+        <Toggle
+          checked={settings.showResetControl}
+          onChange={(showResetControl) => onChange({ showResetControl })}
+          label="Show the restart button on the panel"
+        />
+
+        <Field
+          label="Wake word"
+          hint="Said into a panel that has gone quiet, it starts a fresh conversation. Blank turns it off."
+        >
+          <TextInput
+            value={settings.wakeWord}
+            placeholder="natalie"
+            onChange={(event) => onChange({ wakeWord: event.target.value })}
+          />
+        </Field>
 
         <Toggle
           checked={settings.showCaptions}
