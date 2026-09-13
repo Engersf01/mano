@@ -516,9 +516,9 @@ export default function DisplayClient({ preset }: { preset?: ResolvedPreset }) {
           onPointerDown={(event) => event.stopPropagation()}
           onClick={resetConversation}
           disabled={resetting}
-          className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/45 backdrop-blur transition active:scale-95 active:bg-white/15 active:text-white disabled:opacity-30"
+          className="absolute right-[14px] top-[14px] z-20 flex h-[34px] w-[34px] items-center justify-center rounded-full border border-white/[0.07] bg-black/25 text-white/25 backdrop-blur-sm transition active:scale-95 active:border-white/20 active:bg-white/15 active:text-white disabled:opacity-20"
         >
-          <RotateCcw size={17} />
+          <RotateCcw size={14} />
         </button>
       )}
 
@@ -535,7 +535,7 @@ export default function DisplayClient({ preset }: { preset?: ResolvedPreset }) {
       {/* A small, unobtrusive link state so a dark panel isn't ambiguous.
           A standalone panel has no console, so there is nothing to report. */}
       {!standalone && (
-        <div className="pointer-events-none absolute right-4 top-[4.25rem] flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-ink-300 backdrop-blur">
+        <div className="pointer-events-none absolute right-[14px] top-[56px] flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-[clamp(9px,2.4vw,10px)] uppercase tracking-[0.2em] text-ink-300 backdrop-blur">
           {connected ? (
             <Wifi size={11} className="text-aurora-cyan" />
           ) : (
