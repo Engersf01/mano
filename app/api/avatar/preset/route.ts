@@ -42,6 +42,47 @@ function matches(candidate: string, actual: string) {
   return timingSafeEqual(padded(a), padded(b)) && a.length === b.length;
 }
 
+/**
+ * What the pad needs before anyone types: whether PINs exist at all, and how
+ * long they are.
+ *
+ * The length is what lets the pad open on the last digit instead of making
+ * someone find a submit key on a panel whose keyboard may not even be reaching
+ * the page. It gives away little: an attacker would try six digits anyway, and
+ * they still face the same delay per attempt.
+ *
+ * "Not configured" is worth saying up front rather than after a failed attempt
+ * — it is a setup problem, and letting someone type a PIN at a door with no
+ * lock fitted wastes their time at exactly the wrong moment.
+ */
+export async function GET() {
+  const table = pinTable();
+  const pins = [...table.keys()];
+  const lengths = [...new Set(pins.map((pin) => pin.length))].sort();
+
+  /**
+   * Opening on the last digit means a PIN that is the *start* of a longer one
+   * fires first, and the longer one can never be typed. The operator owns both
+   * PINs, so this is a setup mistake — and an invisible one, since the symptom
+   * is simply that one activity refuses to open. Say it where it is being set
+   * up instead.
+   */
+  const shadowed = pins.some((pin) =>
+    pins.some((other) => other !== pin && other.startsWith(pin)),
+  );
+
+  return NextResponse.json({
+    configured: table.size > 0,
+    lengths,
+    ...(shadowed
+      ? {
+          warning:
+            "One PIN starts with another, so the shorter one always wins. Give every PIN the same length.",
+        }
+      : {}),
+  });
+}
+
 export async function POST(req: Request) {
   let body: { pin?: unknown };
   try {

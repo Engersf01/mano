@@ -44,6 +44,22 @@ export default function PinPad() {
   const [revealed, setRevealed] = useState(-1);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const busyRef = useRef(false);
+  /**
+   * The lengths of the configured PINs, so the pad can open on the last digit
+   * rather than asking for a submit key. Empty until the check comes back.
+   */
+  const [lengths, setLengths] = useState<number[]>([]);
+  /** Lengths already tried for the current entry, so one try is one request. */
+  const triedRef = useRef(new Set<number>());
+  /**
+   * Keeps keystrokes in the page. Without something focusable here, a panel's
+   * keyboard drives the browser's address bar instead: the digits edit the URL
+   * and Enter reloads the page, which looks exactly like the PIN pad refusing
+   * to do anything. `inputMode="none"` stops a touch keyboard covering the pad
+   * while still letting a real one through.
+   */
+  const keyCatcher = useRef<HTMLInputElement | null>(null);
+  const holdFocus = useCallback(() => keyCatcher.current?.focus(), []);
 
   useEffect(() => {
     try {
@@ -54,7 +70,38 @@ export default function PinPad() {
     }
   }, []);
 
-  const submit = useCallback(async (candidate: string) => {
+  // Say "no PINs are set up" before someone types one, not after.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/avatar/preset")
+      .then(
+        (response) =>
+          response.json() as Promise<{
+            configured: boolean;
+            lengths: number[];
+            warning?: string;
+          }>,
+      )
+      .then((data) => {
+        if (cancelled) return;
+        setLengths(data.lengths ?? []);
+        if (!data.configured) {
+          setError(
+            "No PINs are set up yet. Add AVATAR_PINS to the deployment's environment variables, as pin:preset pairs, then redeploy.",
+          );
+        } else if (data.warning) {
+          setError(data.warning);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not reach the server. Check the panel's connection.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const submit = useCallback(async (candidate: string, automatic = false) => {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
@@ -68,9 +115,15 @@ export default function PinPad() {
       const data = (await response.json()) as { preset?: ResolvedPreset; error?: string };
       if (!response.ok || !data.preset) {
         setError(data.error ?? "That PIN doesn't open anything.");
-        setPin("");
         setShake(true);
         setTimeout(() => setShake(false), 500);
+        // An automatic try keeps the digits: with PINs of more than one length,
+        // a six-digit PIN passes through four digits on its way in, and wiping
+        // it there would make longer PINs impossible to type.
+        if (!automatic) {
+          setPin("");
+          triedRef.current.clear();
+        }
         return;
       }
       try {
@@ -94,10 +147,12 @@ export default function PinPad() {
       if (revealTimer.current) clearTimeout(revealTimer.current);
       if (key === "back") {
         setRevealed(-1);
+        triedRef.current.clear();
         return setPin((current) => current.slice(0, -1));
       }
       if (key === "clear") {
         setRevealed(-1);
+        triedRef.current.clear();
         return setPin("");
       }
       setPin((current) => {
@@ -114,6 +169,19 @@ export default function PinPad() {
     if (revealTimer.current) clearTimeout(revealTimer.current);
   }, []);
 
+  /**
+   * Open as soon as the entry is as long as a real PIN. Nobody should have to
+   * find a submit key on a panel, and on this hardware the keyboard may not be
+   * reaching the page at all — the last digit is the natural moment to try.
+   */
+  useEffect(() => {
+    if (preset || busy) return;
+    if (!lengths.includes(pin.length)) return;
+    if (triedRef.current.has(pin.length)) return;
+    triedRef.current.add(pin.length);
+    void submit(pin, true);
+  }, [busy, lengths, pin, preset, submit]);
+
   // A keyboard, for whoever has one attached to the panel.
   useEffect(() => {
     if (preset) return;
@@ -121,7 +189,13 @@ export default function PinPad() {
       if (event.key >= "0" && event.key <= "9") press(event.key);
       else if (event.key === "Backspace") press("back");
       else if (event.key === "Escape") press("clear");
-      else if (event.key === "Enter" && pin.length >= MIN_PIN_LENGTH) void submit(pin);
+      else if (event.key === "Enter") {
+        // Whatever else has focus, Enter on this page is ours — otherwise the
+        // browser treats it as "go" and reloads.
+        event.preventDefault();
+        if (pin.length >= MIN_PIN_LENGTH) void submit(pin);
+        else setError(`A PIN is at least ${MIN_PIN_LENGTH} digits.`);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -132,14 +206,34 @@ export default function PinPad() {
   const ready = pin.length >= MIN_PIN_LENGTH;
 
   return (
-    <main className="flex h-screen w-screen select-none items-center justify-center bg-ink-950 p-4">
+    <main
+      className="flex h-screen w-screen select-none items-center justify-center bg-ink-950 p-4"
+      onPointerDown={holdFocus}
+    >
+      {/* Pulls keyboard focus into the page. Not hidden with display:none —
+          that cannot hold focus — but parked off-screen and silent. */}
+      <input
+        ref={keyCatcher}
+        autoFocus
+        inputMode="none"
+        aria-hidden
+        tabIndex={-1}
+        onBlur={holdFocus}
+        className="pointer-events-none absolute h-px w-px opacity-0"
+      />
       {/* One bordered card rather than elements spread down a tall panel: at a
           stand you are looking at it from a step away, and a group the eye can
           take in at once beats a column it has to travel. */}
       <div className="flex w-full max-w-[17rem] flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-5">
         <div className="flex items-center gap-2 text-ink-300">
-          <LockKeyhole size={14} className="text-aurora-cyan" />
-          <span className="text-xs uppercase tracking-[0.2em]">Enter the PIN</span>
+          {busy ? (
+            <Loader2 size={14} className="animate-spin text-aurora-cyan" />
+          ) : (
+            <LockKeyhole size={14} className="text-aurora-cyan" />
+          )}
+          <span className="text-xs uppercase tracking-[0.2em]">
+            {busy ? "Checking" : "Enter the PIN"}
+          </span>
         </div>
 
         {/* Boxes, not loose dots — the count is readable at a glance, and the
@@ -197,6 +291,10 @@ export default function PinPad() {
           {busy ? <Loader2 size={15} className="animate-spin" /> : null}
           Open
         </button>
+
+        <p className="text-center text-[10px] leading-relaxed text-ink-500">
+          Opens on the last digit — no need to press anything else.
+        </p>
 
         {error && (
           <p className="text-balance text-center text-[11px] leading-relaxed text-aurora-pink">
