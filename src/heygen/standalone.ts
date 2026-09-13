@@ -15,14 +15,21 @@ import {
   type DisplayFit,
   type DisplaySettings,
 } from "./protocol";
-import type { Interactivity, SessionRequest, VideoQuality } from "./types";
+import { LANGUAGE_OPTIONS, type Interactivity, type SessionRequest, type VideoQuality } from "./types";
 
 const QUALITIES: VideoQuality[] = ["low", "medium", "high", "very_high"];
+const LANGUAGES = new Set(LANGUAGE_OPTIONS.map((option) => option.value));
 
 type StandaloneConfig = {
   /** Present only when the link names an avatar — that's what enables autostart. */
   request: (SessionRequest & { mic: boolean }) | null;
   settings: DisplaySettings;
+  /**
+   * Problems with the link itself, shown on the activation screen. A kiosk link
+   * is typed by hand and read by nobody, so a silent fallback is the wrong
+   * default: it fails at the conference, not at setup.
+   */
+  warnings: string[];
 };
 
 const flag = (value: string | null, fallback: boolean) =>
@@ -42,11 +49,13 @@ function num(value: string | null, fallback: number, min: number, max: number) {
 export function parseStandaloneParams(search: string): StandaloneConfig {
   const params = new URLSearchParams(search);
   const avatarId = params.get("avatar")?.trim();
+  const warnings: string[] = [];
 
   const settings: DisplaySettings = {
     fit: params.get("fit") === "contain" ? "contain" : DEFAULT_DISPLAY_SETTINGS.fit,
     mirror: flag(params.get("mirror"), DEFAULT_DISPLAY_SETTINGS.mirror),
     showCaptions: flag(params.get("captions"), DEFAULT_DISPLAY_SETTINGS.showCaptions),
+    showBrand: flag(params.get("brand"), DEFAULT_DISPLAY_SETTINGS.showBrand),
     background: params.get("bg")
       ? `#${params.get("bg")!.replace(/^#/, "")}`
       : DEFAULT_DISPLAY_SETTINGS.background,
@@ -68,7 +77,25 @@ export function parseStandaloneParams(search: string): StandaloneConfig {
     },
   };
 
-  if (!avatarId) return { request: null, settings };
+  if (!avatarId) return { request: null, settings, warnings };
+
+  /**
+   * The API accepts any string here without complaint — `lang=xx` mints a token
+   * exactly like `lang=es` does — and the language it binds drives speech
+   * recognition. So a typo ("sp" for Spanish is the obvious one) buys a session
+   * that looks fine and cannot hear anyone. Check it here instead.
+   */
+  const requested = params.get("lang")?.trim();
+  let language = "en";
+  if (requested) {
+    // A region subtag is the likeliest thing someone writes by hand — "es-DO"
+    // for a Dominican audience — so narrow to the primary subtag rather than
+    // rejecting it. Falling back to English there would be the worst outcome
+    // available: a Spanish-speaking room transcribed by an English model.
+    const primary = requested.toLowerCase().split(/[-_]/)[0];
+    if (LANGUAGES.has(primary)) language = primary;
+    else warnings.push(`Unknown language "${requested}" in the link — using English.`);
+  }
 
   // Dynamic variables travel as var.<name>=<value>.
   const dynamicVariables: Record<string, string> = {};
@@ -82,11 +109,12 @@ export function parseStandaloneParams(search: string): StandaloneConfig {
 
   return {
     settings,
+    warnings,
     request: {
       avatarId,
       voiceId: params.get("voice")?.trim() || undefined,
       contextId: params.get("context")?.trim() || undefined,
-      language: params.get("lang")?.trim() || "en",
+      language,
       quality: quality && QUALITIES.includes(quality) ? quality : "high",
       interactivity,
       speed: num(params.get("speed"), 1, 0.8, 1.2),
@@ -120,6 +148,8 @@ export function buildStandaloneUrl(
   if (settings.fit !== DEFAULT_DISPLAY_SETTINGS.fit) params.set("fit", settings.fit as DisplayFit);
   if (settings.mirror) params.set("mirror", "1");
   if (settings.showCaptions) params.set("captions", "1");
+  // On by default, so only the off switch needs to travel.
+  if (!settings.showBrand) params.set("brand", "0");
   if (settings.background !== DEFAULT_DISPLAY_SETTINGS.background) {
     params.set("bg", settings.background.replace(/^#/, ""));
   }

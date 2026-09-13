@@ -55,11 +55,12 @@ itself on the activation tap, with no console and no control channel.
 | `avatar` | Avatar id — **presence of this is what enables standalone mode** |
 | `context` | Knowledge context id |
 | `voice` | Voice id (defaults to the avatar's own) |
-| `lang` | Language code, default `en` |
+| `lang` | Language code, default `en`. **Validated here** — see below |
 | `quality` | `low` · `medium` · `high` (default) · `very_high` |
 | `mode` | `CONVERSATIONAL` (default) or `PUSH_TO_TALK` |
 | `speed` | Voice rate, 0.8–1.2 |
 | `mic` | `1` to listen through the panel's microphone |
+| `brand` | `0` to hide the stand lockup along the bottom (**on by default**) |
 | `fit` `mirror` `captions` `bg` `scale` | Framing, same meanings as the console's Framing panel (`bg` defaults to pure black) |
 | `chroma` | Green-backdrop removal. **On by default** — pass `chroma=0` for the raw feed |
 | `key` | Backdrop colour to remove, hex without `#`. Omit it and the colour is **sampled from the feed** — set this only if detection picks wrong |
@@ -127,6 +128,41 @@ than showing nothing.
 
 Tune it live from the console's **Framing** panel, or with `key`, `similarity`,
 `smoothness` and `spill` in the link.
+
+## Branding the panel
+
+A lockup sits along the bottom of the panel — on the activation screen and
+through the whole session — dim enough not to compete with the avatar's face.
+
+Put the artwork at **`public/brand/nxt-natalie.png`** and it is picked up with no
+code change. Without that file the lockup falls back to type rather than leaving
+a broken-image icon glowing on a black screen, which is the failure that matters:
+the panel *is* the product at a conference.
+
+Hide it with `brand=0` in the link, or the **Show the nxT · Natalie lockup**
+toggle in the console's Framing panel. It never intercepts touch, so the
+long-press-to-reset still works over it.
+
+## Language, and why the link checks it
+
+`lang` binds the session's language, which drives **speech recognition** as well
+as speech. The API accepts any string here without complaint — `lang=xx` mints a
+token exactly like `lang=es` does — so a typo buys a session that looks perfectly
+healthy and cannot understand anyone in the room.
+
+The link parser therefore checks it against the known codes:
+
+- a region subtag is narrowed to its primary one, so `es-DO` and `es_DO` become
+  `es` rather than being rejected;
+- anything else (`sp`, the classic wrong code for Spanish) falls back to English
+  **and says so on the activation screen**, which is the last moment a human is
+  looking at the panel on purpose.
+
+There is no auto-detect: LiveAvatar's STT config exposes a provider and no
+language, so one session hears one language. An avatar told to switch languages
+mid-conversation will *speak* the second language fine, but keeps listening with
+the first one's model. If a stand turns out to be mostly English, open a second
+link with `lang=en` rather than relying on the switch.
 
 ## A fresh conversation for each visitor
 
@@ -215,6 +251,9 @@ over `/v1/contexts`.
 - Contexts are independent of avatars and voices, so one context can be paired
   with different faces.
 - Edits apply on the *next* session — restart to pick them up.
+- Authored copies of the personas live in `docs/contexts/`, with the push and
+  pull commands. HeyGen is what the avatar reads; the files are what git can
+  review.
 - Write the opening line as an **instruction**, not as something already done.
   A prompt saying "you have already asked their name" tells the model that
   question is behind it, and it will skip straight past the greeting.

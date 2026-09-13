@@ -28,6 +28,7 @@ import { parseStandaloneParams } from "@/heygen/standalone";
 import { micBlockedReason, useAvatarSession } from "@/heygen/useAvatarSession";
 import type { SessionRequest } from "@/heygen/types";
 import { AvatarStage } from "@/ui/avatar/AvatarStage";
+import { BrandMark } from "@/ui/avatar/BrandMark";
 
 type WakeLock = { release: () => Promise<void>; released: boolean };
 
@@ -46,6 +47,8 @@ export default function DisplayClient() {
   const [caption, setCaption] = useState<string | null>(null);
 
   const [standalone, setStandalone] = useState(false);
+  /** Problems with the link, surfaced on the gate where someone is looking. */
+  const [linkWarnings, setLinkWarnings] = useState<string[]>([]);
   const roomRef = useRef("default");
   const wakeLockRef = useRef<WakeLock | null>(null);
   /** Session config parsed from a standalone link, applied on the activation tap. */
@@ -92,6 +95,7 @@ export default function DisplayClient() {
 
     const parsed = parseStandaloneParams(search);
     setSettings(parsed.settings);
+    setLinkWarnings(parsed.warnings);
     autoStartRef.current = parsed.request;
     standaloneRef.current = Boolean(parsed.request);
     setStandalone(Boolean(parsed.request));
@@ -374,6 +378,13 @@ export default function DisplayClient() {
         <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-ink-200">
           room · {room}
         </span>
+        {/* The last moment anyone is looking at this screen on purpose. */}
+        {linkWarnings.length > 0 && (
+          <span className="max-w-sm rounded-xl border border-aurora-gold/30 bg-aurora-gold/10 px-3 py-2 text-xs leading-relaxed text-aurora-gold">
+            {linkWarnings.join(" ")}
+          </span>
+        )}
+        {settings.showBrand && <BrandMark />}
       </button>
     );
   }
@@ -407,6 +418,8 @@ export default function DisplayClient() {
           </div>
         }
       />
+
+      {settings.showBrand && <BrandMark />}
 
       {/* Confirms the long press landed — without it the operator can't tell a
           reset from a panel that simply stopped responding. */}
