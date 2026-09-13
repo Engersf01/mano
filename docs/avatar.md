@@ -73,9 +73,15 @@ from one environment variable, which also means changing a PIN takes no deploy:
 AVATAR_PINS="482199:natalie, 731044:natalie-en, 555000:natalie-quiet"
 ```
 
-Each entry is `pin:preset-id`. Unset, `/p` says so plainly rather than opening —
-a gate that lets everyone through is worse than no gate, because it looks like
-one.
+Each entry is `pin:preset-id`. Unset, `/p` says so plainly **before anyone types
+a digit** rather than after a failed attempt — a gate that lets everyone through
+is worse than no gate, and a door with no lock fitted should not take a PIN.
+
+**Give every PIN the same length.** The pad opens on the last digit, so a PIN
+that is the start of a longer one fires first and the longer one can never be
+typed at all — `4821` shadows `482199`, and the only symptom is one activity
+silently refusing to open. The pad checks for that on load and says so, since
+it is a setup mistake and this is where setup happens.
 
 What the PIN is and is not:
 
@@ -89,6 +95,22 @@ What the PIN is and is not:
   so neither the timing nor the error message says how close a guess was.
 - It gates the **panel**, not the HeyGen API routes. Anyone who knows the API
   shape can still call those directly; that is a separate hole, and still open.
+
+### Opening
+
+**The pad opens on the last digit.** There is no submit step: as soon as the
+entry is as long as a configured PIN it is tried, and the result — the panel, or
+a reason — comes straight back. `Open` and `Enter` still work as a fallback.
+
+That matters more than convenience on this hardware. The pad has a focus-catching
+input precisely because, without one, a panel's keyboard drives the **browser's
+address bar** instead of the page: the digits edit the URL and Enter reloads,
+which looks exactly like the PIN pad ignoring everything typed at it. If keys
+ever seem to go nowhere, tap the screen once — that pulls focus back.
+
+With PINs of mixed length, one try is sent per length the entry passes through,
+and a failed automatic try keeps the digits so a longer PIN can still be typed.
+Same-length PINs avoid both.
 
 Once unlocked, the panel remembers the preset in `sessionStorage`, so an
 accidental reload mid-conference does not send someone hunting for the PIN.
