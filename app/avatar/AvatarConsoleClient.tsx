@@ -208,6 +208,27 @@ export default function AvatarConsoleClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [local, post, remote]);
 
+  /**
+   * Start the conversation over without going dark.
+   *
+   * A LiveAvatar session is one conversation history, so a visitor's name — or a
+   * wrong turn the avatar has committed to — survives anything short of a new
+   * session. Stop-then-start is the whole mechanism; the avatar replays its
+   * opening line, which is the greeting the next person should hear.
+   */
+  const reset = useCallback(async () => {
+    setBusy(true);
+    store.clearTranscript();
+    if (remote) await post("reset");
+    else {
+      const request = toSessionRequest(useAvatarStore.getState().config);
+      await local.stop();
+      await local.start(request);
+    }
+    setBusy(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [local, post, remote]);
+
   const stop = useCallback(async () => {
     setBusy(true);
     if (remote) await post("stop");
@@ -374,6 +395,7 @@ export default function AvatarConsoleClient() {
                 canStart={canStart}
                 onStart={start}
                 onStop={stop}
+                onReset={reset}
                 requiredVariables={requiredVariables}
                 loadingVariables={loadingVariables}
               />

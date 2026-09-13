@@ -4,8 +4,9 @@
  *
  * It owns the HeyGen session (the video and audio have to land where the screen
  * and speakers are) and takes its orders from the console over the SSE channel.
- * The only interaction is tapping: once to activate, and thereafter to restore
- * fullscreen if the browser has dropped out of it.
+ * Touch does three things and nothing else: the first tap activates, later taps
+ * restore fullscreen if the browser has dropped out of it, and a long press
+ * starts the conversation over for the next visitor.
  *
  * A link carrying `?avatar=<id>` runs standalone instead: the panel starts that
  * session itself on the activation tap, with no console and no control channel.
@@ -15,6 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MonitorPlay, Wifi, WifiOff } from "lucide-react";
 import { openChannel, sendMessage, type IncomingMessage } from "@/heygen/channel";
+import { shouldResetForIdle } from "@/heygen/idle";
 import {
   DEFAULT_DISPLAY_SETTINGS,
   type ConsoleCommand,
@@ -29,6 +31,12 @@ import { AvatarStage } from "@/ui/avatar/AvatarStage";
 
 type WakeLock = { release: () => Promise<void>; released: boolean };
 
+/** How long to hold the panel before the conversation restarts. */
+const HOLD_TO_RESET_MS = 1500;
+
+/** How often the idle watchdog looks; the threshold itself is in seconds. */
+const IDLE_CHECK_MS = 5000;
+
 export default function DisplayClient() {
   /** The tap gate: Android Chrome won't play audio until the user asks it to. */
   const [activated, setActivated] = useState(false);
@@ -42,10 +50,23 @@ export default function DisplayClient() {
   const wakeLockRef = useRef<WakeLock | null>(null);
   /** Session config parsed from a standalone link, applied on the activation tap. */
   const autoStartRef = useRef<(SessionRequest & { mic: boolean }) | null>(null);
+  /** Whatever is actually running, so a reset can restart the same thing. */
+  const runningRequestRef = useRef<(SessionRequest & { mic?: boolean }) | null>(null);
+  /** Last moment anyone spoke, either side. Drives the idle reset. */
+  const lastActivityRef = useRef(Date.now());
+  const [resetting, setResetting] = useState(false);
+  /**
+   * The watchdog and the long press can both fire a reset, and a restart takes
+   * a few seconds. Without this guard the second one tears down the session the
+   * first one just opened.
+   */
+  const resettingRef = useRef(false);
 
   const standaloneRef = useRef(false);
 
   const publishTranscript = useCallback((entry: TranscriptEntry) => {
+    // Any speech, from either side, means the conversation is still alive.
+    if (entry.role !== "system") lastActivityRef.current = Date.now();
     if (entry.role === "avatar") setCaption(entry.text);
     if (standaloneRef.current) return;
     void sendMessage(roomRef.current, "display", "transcript", entry).catch(() => {});
@@ -106,10 +127,82 @@ export default function DisplayClient() {
     setActivated(true);
     void goFullscreen();
     const request = autoStartRef.current;
-    if (request) void sessionRef.current.start(request);
+    if (request) {
+      runningRequestRef.current = request;
+      lastActivityRef.current = Date.now();
+      void sessionRef.current.start(request);
+    }
   }, [goFullscreen]);
 
   const blockedReason = useMemo(() => (activated ? micBlockedReason() : null), [activated]);
+
+  /**
+   * Start a clean conversation.
+   *
+   * A LiveAvatar session carries its whole conversation history, so the only
+   * way to forget the last visitor — their name above all — is to end the
+   * session and open a new one. The avatar then replays its opening line, which
+   * is exactly the greeting the next person should get.
+   */
+  const resetConversation = useCallback(async () => {
+    const request = runningRequestRef.current;
+    if (!request || resettingRef.current) return;
+    resettingRef.current = true;
+    setResetting(true);
+    setCaption(null);
+    try {
+      await sessionRef.current.stop();
+      await sessionRef.current.start(request);
+    } finally {
+      lastActivityRef.current = Date.now();
+      resettingRef.current = false;
+      setResetting(false);
+    }
+  }, []);
+
+  /**
+   * Hold anywhere for a moment to start over.
+   *
+   * A kiosk has no controls and shouldn't grow any — but the operator needs a
+   * way out when the avatar is stuck on the wrong person or the wrong subject.
+   * A deliberate long press is invisible to visitors and hard to trigger by
+   * accident, unlike a button a passer-by would press.
+   */
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelHold = useCallback(() => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  }, []);
+
+  const beginHold = useCallback(() => {
+    void goFullscreen();
+    cancelHold();
+    holdTimerRef.current = setTimeout(() => {
+      holdTimerRef.current = null;
+      void resetConversation();
+    }, HOLD_TO_RESET_MS);
+  }, [cancelHold, goFullscreen, resetConversation]);
+
+  /**
+   * The release is watched on the window rather than as an `onPointerLeave` on
+   * the stage. React refires enter/leave whenever a re-render changes which
+   * element sits under the finger — and this page re-renders on its own, on
+   * every status change — so a stage-level leave handler cancelled the hold a
+   * few hundred milliseconds in, every time. The window sees only real
+   * releases.
+   */
+  useEffect(() => {
+    window.addEventListener("pointerup", cancelHold);
+    window.addEventListener("pointercancel", cancelHold);
+    return () => {
+      window.removeEventListener("pointerup", cancelHold);
+      window.removeEventListener("pointercancel", cancelHold);
+      cancelHold();
+    };
+  }, [cancelHold]);
 
   /**
    * Everything the console needs to render its status strip. Keyed on the
@@ -145,9 +238,16 @@ export default function DisplayClient() {
     const session = sessionRef.current;
     const command = { type: message.type, payload: message.payload } as ConsoleCommand;
     switch (command.type) {
-      case "start":
+      case "start": {
         setCaption(null);
-        void session.start(command.payload as SessionRequest & { mic?: boolean });
+        const request = command.payload as SessionRequest & { mic?: boolean };
+        runningRequestRef.current = request;
+        lastActivityRef.current = Date.now();
+        void session.start(request);
+        break;
+      }
+      case "reset":
+        void resetConversation();
         break;
       case "stop":
         void session.stop();
@@ -175,7 +275,7 @@ export default function DisplayClient() {
         window.location.reload();
         break;
     }
-  }, []);
+  }, [resetConversation]);
 
   // Subscribe only after activation, so a panel sitting on the tap gate can't be
   // told to start a session it has no permission to play. A standalone panel
@@ -197,6 +297,33 @@ export default function DisplayClient() {
     if (!activated || standalone) return;
     void sendMessage(roomRef.current, "display", "state", state).catch(() => setConnected(false));
   }, [activated, standalone, state]);
+
+  /**
+   * Idle watchdog: when a visitor walks away mid-conversation, nothing ends the
+   * session, so the next person is greeted inside the last person's chat. After
+   * a stretch of silence the conversation restarts on its own.
+   */
+  useEffect(() => {
+    const seconds = settings.idleResetSeconds;
+    if (!activated || seconds <= 0) return;
+    const timer = setInterval(() => {
+      const live = sessionRef.current;
+      // Anyone mid-sentence counts as activity, so the countdown restarts from
+      // the end of the utterance rather than from its beginning.
+      if (live.speaking || live.listening) lastActivityRef.current = Date.now();
+      const due = shouldResetForIdle({
+        status: live.status,
+        speaking: live.speaking,
+        listening: live.listening,
+        lastActivityAt: lastActivityRef.current,
+        now: Date.now(),
+        idleResetSeconds: seconds,
+        resetInFlight: resettingRef.current,
+      });
+      if (due) void resetConversation();
+    }, IDLE_CHECK_MS);
+    return () => clearInterval(timer);
+  }, [activated, resetConversation, settings.idleResetSeconds]);
 
   /** Kiosk panels shouldn't dim mid-conversation. Secure contexts only. */
   const acquireWakeLock = useCallback(async () => {
@@ -254,7 +381,7 @@ export default function DisplayClient() {
   return (
     <main
       className="relative h-screen w-screen overflow-hidden bg-ink-950"
-      onPointerDown={() => void goFullscreen()}
+      onPointerDown={beginHold}
     >
       <AvatarStage
         videoRef={session.setVideoElement}
@@ -280,6 +407,16 @@ export default function DisplayClient() {
           </div>
         }
       />
+
+      {/* Confirms the long press landed — without it the operator can't tell a
+          reset from a panel that simply stopped responding. */}
+      {resetting && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-ink-950/80">
+          <span className="text-xs uppercase tracking-[0.3em] text-aurora-cyan">
+            Starting a new conversation…
+          </span>
+        </div>
+      )}
 
       {/* A small, unobtrusive link state so a dark panel isn't ambiguous.
           A standalone panel has no console, so there is nothing to report. */}
