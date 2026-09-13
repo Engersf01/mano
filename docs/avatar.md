@@ -73,9 +73,14 @@ from one environment variable, which also means changing a PIN takes no deploy:
 AVATAR_PINS="482199:natalie, 731044:natalie-en, 555000:natalie-quiet"
 ```
 
-Each entry is `pin:preset-id`. Unset, `/p` says so plainly **before anyone types
-a digit** rather than after a failed attempt — a gate that lets everyone through
-is worse than no gate, and a door with no lock fitted should not take a PIN.
+Each entry is `pin:preset-id`.
+
+**With the variable unset, `/p` shows setup instructions and no keypad at all.**
+A keypad that cannot open anything is a lie: it looks like the panel is refusing
+the digits, when nothing was ever going to open. On Vercel a new environment
+variable needs a **redeploy** before an existing deployment can see it, which is
+the step that is easiest to miss — so the screen says that too, and offers a
+*Check again* button.
 
 **Give every PIN the same length.** The pad opens on the last digit, so a PIN
 that is the start of a longer one fires first and the longer one can never be

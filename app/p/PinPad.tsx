@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Delete, Loader2, LockKeyhole } from "lucide-react";
+import { Delete, Loader2, LockKeyhole, TriangleAlert } from "lucide-react";
 import { MAX_PIN_LENGTH, MIN_PIN_LENGTH, type ResolvedPreset } from "@/avatar/presets";
 
 const DisplayClient = dynamic(() => import("../avatar/display/DisplayClient"), {
@@ -49,6 +49,16 @@ export default function PinPad() {
    * rather than asking for a submit key. Empty until the check comes back.
    */
   const [lengths, setLengths] = useState<number[]>([]);
+  /**
+   * What the server says about its own setup: null while asking, then whether
+   * any PINs exist at all.
+   *
+   * Kept apart from `error` on purpose. A standing condition — no PINs
+   * configured, two PINs colliding — must not be wiped by the next keypress
+   * the way a wrong-PIN message should be. It was, and the result was a panel
+   * that explained itself for exactly as long as nobody touched it.
+   */
+  const [setup, setSetup] = useState<{ configured: boolean; warning?: string } | null>(null);
   /** Lengths already tried for the current entry, so one try is one request. */
   const triedRef = useRef(new Set<number>());
   /**
@@ -85,16 +95,12 @@ export default function PinPad() {
       .then((data) => {
         if (cancelled) return;
         setLengths(data.lengths ?? []);
-        if (!data.configured) {
-          setError(
-            "No PINs are set up yet. Add AVATAR_PINS to the deployment's environment variables, as pin:preset pairs, then redeploy.",
-          );
-        } else if (data.warning) {
-          setError(data.warning);
-        }
+        setSetup({ configured: Boolean(data.configured), warning: data.warning });
       })
       .catch(() => {
-        if (!cancelled) setError("Could not reach the server. Check the panel's connection.");
+        if (cancelled) return;
+        setSetup({ configured: false, warning: "Could not reach the server." });
+        setError("Could not reach the server. Check the panel's connection.");
       });
     return () => {
       cancelled = true;
@@ -176,7 +182,10 @@ export default function PinPad() {
    */
   useEffect(() => {
     if (preset || busy) return;
-    if (!lengths.includes(pin.length)) return;
+    // With no lengths known — the setup check failed — fall back to trying at
+    // the maximum. Silence is the one outcome this must never produce.
+    const targets = lengths.length > 0 ? lengths : [MAX_PIN_LENGTH];
+    if (!targets.includes(pin.length)) return;
     if (triedRef.current.has(pin.length)) return;
     triedRef.current.add(pin.length);
     void submit(pin, true);
@@ -202,6 +211,47 @@ export default function PinPad() {
   }, [pin, preset, press, submit]);
 
   if (preset) return <DisplayClient preset={preset} />;
+
+  /**
+   * No PINs exist, so no PIN can work. Showing a keypad here is a lie: it
+   * looks like the panel is refusing the digits when nothing was ever going
+   * to open. Say what is wrong and exactly what fixes it instead.
+   */
+  if (setup && !setup.configured) {
+    return (
+      <main className="flex h-screen w-screen items-center justify-center bg-ink-950 p-5">
+        <div className="flex w-full max-w-sm flex-col gap-3 rounded-3xl border border-aurora-gold/30 bg-aurora-gold/5 p-5 text-left">
+          <div className="flex items-center gap-2 text-aurora-gold">
+            <TriangleAlert size={16} />
+            <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+              Not set up yet
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed text-ink-100">
+            This panel has no PINs, so nothing can open it. Add an environment
+            variable to the deployment:
+          </p>
+          <code className="block rounded-xl bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-aurora-cyan">
+            AVATAR_PINS
+            <br />
+            482199:natalie, 731044:natalie-en
+          </code>
+          <p className="text-xs leading-relaxed text-ink-300">
+            In Vercel: <strong className="text-ink-100">Settings → Environment Variables</strong>,
+            then <strong className="text-ink-100">redeploy</strong> — an existing deployment does
+            not pick up a new variable on its own.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-1 h-11 rounded-xl border border-white/15 bg-white/5 text-sm text-ink-100 active:scale-95"
+          >
+            Check again
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   const ready = pin.length >= MIN_PIN_LENGTH;
 
@@ -235,6 +285,12 @@ export default function PinPad() {
             {busy ? "Checking" : "Enter the PIN"}
           </span>
         </div>
+
+        {setup?.warning && (
+          <p className="rounded-xl border border-aurora-gold/30 bg-aurora-gold/10 px-3 py-2 text-[11px] leading-relaxed text-aurora-gold">
+            {setup.warning}
+          </p>
+        )}
 
         {/* Boxes, not loose dots — the count is readable at a glance, and the
             digit just pressed shows before it masks. */}
@@ -292,12 +348,14 @@ export default function PinPad() {
           Open
         </button>
 
-        <p className="text-center text-[10px] leading-relaxed text-ink-500">
-          Opens on the last digit — no need to press anything else.
-        </p>
+        {lengths.length > 0 && (
+          <p className="text-center text-[10px] leading-relaxed text-ink-500">
+            Opens on the last digit — no need to press anything else.
+          </p>
+        )}
 
         {error && (
-          <p className="text-balance text-center text-[11px] leading-relaxed text-aurora-pink">
+          <p className="w-full text-balance rounded-xl border border-aurora-pink/30 bg-aurora-pink/10 px-3 py-2 text-center text-xs leading-relaxed text-aurora-pink">
             {error}
           </p>
         )}
