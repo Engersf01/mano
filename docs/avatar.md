@@ -131,16 +131,41 @@ Tune it live from the console's **Framing** panel, or with `key`, `similarity`,
 
 ## Branding the panel
 
-A lockup sits along the bottom of the panel — on the activation screen and
-through the whole session — dim enough not to compete with the avatar's face.
+A lockup sits where a broadcast lower-third sits — **bottom left, lifted off the
+edge** — so a viewer can see who is talking without it reading as a caption or a
+watermark. Left rather than centred because centre puts it under her chin on a
+portrait panel; lifted because a panel's lowest band is the first thing a bezel,
+a shelf edge or someone's head cuts off.
 
-Put the artwork at **`public/brand/nxt-natalie.png`** and it is picked up with no
-code change. Without that file the lockup falls back to type rather than leaving
-a broken-image icon glowing on a black screen, which is the failure that matters:
-the panel *is* the product at a conference.
+| | |
+|---|---|
+| Supplied artwork | `public/brand/nxT Natalie -Logo.png` — the original, untouched |
+| What the panel loads | `public/brand/nxt-natalie.png` — generated |
+| Generator | `python3 scripts/brand-asset.py` |
+
+Run the script after replacing the artwork. It does three things, all of them
+mechanical, which is why they aren't a one-off edit:
+
+- **Trims** the 3500×3500 square down to its content (2696×1545). Most of that
+  square is empty, so layout percentages against it mean nothing and the padding
+  pushes the lockup away from the corner it is anchored to.
+- **Knocks the wordmark out to white.** The supplied logo sets "natalie" in
+  near-black, which is invisible on the black a holographic panel needs — the
+  badge and the cyan rule would show and the name, the whole point of a
+  lower-third, would not. Only type *outside* the white badge is recoloured: the
+  sketched star inside the badge is dark too, and inverting that would destroy
+  it. The two are told apart by filling the badge silhouette and asking which
+  side of it each dark pixel falls on. The cyan rule is left alone.
+- **Shrinks** it from 1.98 MB to about 60 KB, by palette-quantizing to 256
+  colours — a max per-channel error of 20 on 0.2% of pixels, on an element that
+  renders about 400 px wide over conference wifi.
+
+If the generated file is missing, the lockup falls back to type rather than
+leaving a broken-image icon glowing on a black screen — the failure that
+actually matters, because the panel *is* the product at a conference.
 
 Hide it with `brand=0` in the link, or the **Show the nxT · Natalie lockup**
-toggle in the console's Framing panel. It never intercepts touch, so the
+toggle in the console's Framing panel. It never intercepts touch, so
 long-press-to-reset still works over it.
 
 ## Language, and why the link checks it
