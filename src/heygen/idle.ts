@@ -12,7 +12,7 @@
  * cuts the avatar off, and one that fires during a restart tears down the
  * session the last reset just opened.
  */
-import type { DisplayStatus } from "./protocol";
+import type { DisplayStatus, TranscriptRole } from "./protocol";
 
 export type IdleCheck = {
   status: DisplayStatus;
@@ -47,4 +47,42 @@ export function shouldResetForIdle({
   // Mid-utterance is not idle, however long the pause before it was.
   if (speaking || listening) return false;
   return now - lastActivityAt >= idleResetSeconds * 1000;
+}
+
+/** Case and accents are not part of saying a name out loud. */
+const normalize = (text: string) =>
+  text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+export type WakeCheck = {
+  /** Who said it. Only a visitor can wake the panel. */
+  role: TranscriptRole;
+  text: string;
+  /** The word to listen for. Empty disables waking entirely. */
+  wakeWord: string;
+  /** How long the panel had been silent *before* this line. */
+  silenceMs: number;
+  /** How much silence means the last visitor has gone. */
+  thresholdMs: number;
+};
+
+/**
+ * Whether a line of speech is a new visitor getting the panel's attention.
+ *
+ * The danger here is the obvious one: "gracias, Natalie" said mid-conversation
+ * must not wipe the conversation it is thanking. Silence is what separates the
+ * two — someone saying her name into a panel that has been quiet for a while is
+ * arriving, not replying.
+ */
+export function isWakeCall({
+  role,
+  text,
+  wakeWord,
+  silenceMs,
+  thresholdMs,
+}: WakeCheck): boolean {
+  if (role !== "user") return false;
+  const wake = wakeWord.trim();
+  if (!wake) return false;
+  if (silenceMs < thresholdMs) return false;
+  return normalize(text).includes(normalize(wake));
 }

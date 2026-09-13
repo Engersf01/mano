@@ -14,9 +14,9 @@
  * can land on different instances.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MonitorPlay, Wifi, WifiOff } from "lucide-react";
+import { MonitorPlay, RotateCcw, Wifi, WifiOff } from "lucide-react";
 import { openChannel, sendMessage, type IncomingMessage } from "@/heygen/channel";
-import { shouldResetForIdle } from "@/heygen/idle";
+import { isWakeCall, shouldResetForIdle } from "@/heygen/idle";
 import {
   DEFAULT_DISPLAY_SETTINGS,
   type ConsoleCommand,
@@ -37,6 +37,14 @@ const HOLD_TO_RESET_MS = 1500;
 
 /** How often the idle watchdog looks; the threshold itself is in seconds. */
 const IDLE_CHECK_MS = 5000;
+
+/**
+ * How quiet the panel must have been before the wake word is taken as a new
+ * visitor rather than as part of the conversation in progress.
+ *
+ * Without this, "gracias, Natalie" would wipe the conversation it was thanking.
+ */
+const WAKE_AFTER_SILENCE_MS = 15_000;
 
 export default function DisplayClient() {
   /** The tap gate: Android Chrome won't play audio until the user asks it to. */
@@ -67,10 +75,32 @@ export default function DisplayClient() {
 
   const standaloneRef = useRef(false);
 
+  /** Set below — the transcript handler is created before the reset exists. */
+  const resetRef = useRef<() => void>(() => {});
+  const wakeWordRef = useRef(DEFAULT_DISPLAY_SETTINGS.wakeWord);
+
   const publishTranscript = useCallback((entry: TranscriptEntry) => {
+    // How long the panel had been quiet *before* this line — read it first,
+    // because the next statement is what makes it "now".
+    const silence = Date.now() - lastActivityRef.current;
     // Any speech, from either side, means the conversation is still alive.
     if (entry.role !== "system") lastActivityRef.current = Date.now();
     if (entry.role === "avatar") setCaption(entry.text);
+
+    // Someone saying her name into a panel that has been quiet is a new person
+    // arriving, not a turn in the last conversation — so start a fresh one.
+    if (
+      isWakeCall({
+        role: entry.role,
+        text: entry.text,
+        wakeWord: wakeWordRef.current,
+        silenceMs: silence,
+        thresholdMs: WAKE_AFTER_SILENCE_MS,
+      })
+    ) {
+      resetRef.current();
+    }
+
     if (standaloneRef.current) return;
     void sendMessage(roomRef.current, "display", "transcript", entry).catch(() => {});
   }, []);
@@ -138,6 +168,8 @@ export default function DisplayClient() {
     }
   }, [goFullscreen]);
 
+  wakeWordRef.current = settings.wakeWord;
+
   const blockedReason = useMemo(() => (activated ? micBlockedReason() : null), [activated]);
 
   /**
@@ -163,6 +195,8 @@ export default function DisplayClient() {
       setResetting(false);
     }
   }, []);
+
+  resetRef.current = () => void resetConversation();
 
   /**
    * Hold anywhere for a moment to start over.
@@ -207,6 +241,27 @@ export default function DisplayClient() {
       cancelHold();
     };
   }, [cancelHold]);
+
+  /**
+   * A keyboard is the operator's fastest control, and panels at a stand often
+   * have one attached for exactly this. R restarts, F restores fullscreen.
+   */
+  useEffect(() => {
+    if (!activated) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (key === "r" || key === " " || key === "enter") {
+        event.preventDefault();
+        void resetConversation();
+      } else if (key === "f") {
+        event.preventDefault();
+        void goFullscreen();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activated, goFullscreen, resetConversation]);
 
   /**
    * Everything the console needs to render its status strip. Keyed on the
@@ -378,6 +433,13 @@ export default function DisplayClient() {
         <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-ink-200">
           room · {room}
         </span>
+        <span className="max-w-sm text-[11px] leading-relaxed text-ink-400">
+          Restart the conversation with the button top right, by holding anywhere for a
+          moment, or with <kbd className="font-mono text-ink-200">R</kbd> on a keyboard.
+          {settings.wakeWord &&
+            ` Once the panel has been quiet, saying “${settings.wakeWord}” starts a fresh one.`}
+        </span>
+
         {/* The last moment anyone is looking at this screen on purpose. */}
         {linkWarnings.length > 0 && (
           <span className="max-w-sm rounded-xl border border-aurora-gold/30 bg-aurora-gold/10 px-3 py-2 text-xs leading-relaxed text-aurora-gold">
@@ -421,6 +483,24 @@ export default function DisplayClient() {
 
       {settings.showBrand && <BrandMark />}
 
+      {/* The operator's control. Small and dim on purpose: it has to be findable
+          in a second without inviting a passer-by to press it, and it sits top
+          right — away from the lockup, and away from where a hand rests. Its
+          own pointer events are kept off the stage so tapping it can't also
+          start the press-and-hold. */}
+      {settings.showResetControl && (
+        <button
+          type="button"
+          aria-label="Start a new conversation"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={resetConversation}
+          disabled={resetting}
+          className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/45 backdrop-blur transition active:scale-95 active:bg-white/15 active:text-white disabled:opacity-30"
+        >
+          <RotateCcw size={17} />
+        </button>
+      )}
+
       {/* Confirms the long press landed — without it the operator can't tell a
           reset from a panel that simply stopped responding. */}
       {resetting && (
@@ -434,7 +514,7 @@ export default function DisplayClient() {
       {/* A small, unobtrusive link state so a dark panel isn't ambiguous.
           A standalone panel has no console, so there is nothing to report. */}
       {!standalone && (
-        <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-ink-300 backdrop-blur">
+        <div className="pointer-events-none absolute right-4 top-[4.25rem] flex items-center gap-1.5 rounded-full bg-black/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-ink-300 backdrop-blur">
           {connected ? (
             <Wifi size={11} className="text-aurora-cyan" />
           ) : (
