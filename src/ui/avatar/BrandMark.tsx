@@ -1,29 +1,37 @@
 "use client";
 /**
- * The stand's branding, along the bottom of the panel.
+ * The stand's lockup — the nxT badge and Natalie's name — sitting where a
+ * broadcast lower-third sits: bottom left, lifted off the edge, so a viewer
+ * knows who is talking without it reading as a caption or a watermark.
  *
- * Deliberately quiet. On a holographic panel every lit pixel competes with the
- * avatar's face, so this sits low, dimmed, and never animates — it should read
- * as a plate under her rather than as a second thing to look at.
+ * Left rather than centred because centre puts it under her chin on a portrait
+ * panel; lifted off the bottom because a panel's lowest band is the first thing
+ * a bezel, a shelf edge or someone's head cuts off.
  *
- * The artwork is a file in `public/brand/`, and if it isn't there the lockup
- * falls back to type. That matters more than it sounds: the panel is the whole
- * product at a conference, and a missing image must not leave a broken-image
- * icon glowing on a black screen in front of a room of physicians.
+ * The artwork is generated from the supplied logo by `scripts/brand-asset.py`
+ * — the supplied file sets the name in near-black, which is invisible on the
+ * black background the panel needs, so the script knocks the wordmark out to
+ * white. If the file is missing the lockup falls back to type rather than
+ * leaving a broken-image icon glowing on a black screen, which is the failure
+ * that actually matters: the panel *is* the product at a conference.
  */
 import { useState } from "react";
 
-/** Drop the supplied artwork here and it is picked up with no code change. */
 export const BRAND_LOGO_SRC = "/brand/nxt-natalie.png";
+
+/** Trimmed artwork is 1400×802. Reserving the ratio stops a late load nudging
+ *  the layout, and keeps the fallback the same size as the real thing. */
+const ASPECT = "1400 / 802";
 
 export function BrandMark({ className }: { className?: string }) {
   const [artwork, setArtwork] = useState(true);
 
   return (
     <div
-      // Never intercept touch: the panel's long-press-to-reset lives on the
-      // whole stage, and a visitor's finger lands low as often as anywhere.
-      className={`pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex justify-center pb-[max(1.5rem,env(safe-area-inset-bottom))] ${className ?? ""}`}
+      // Never intercept touch: the long-press-to-reset lives on the whole
+      // stage, and a finger lands low-left as often as anywhere.
+      className={`pointer-events-none absolute z-[5] bottom-[max(7vh,env(safe-area-inset-bottom))] left-[max(5vw,env(safe-area-inset-left))] ${className ?? ""}`}
+      style={{ width: "min(52vw, 24rem)" }}
     >
       {artwork ? (
         // A plain <img>, not next/image: this needs an error handler to fall
@@ -33,7 +41,8 @@ export function BrandMark({ className }: { className?: string }) {
           src={BRAND_LOGO_SRC}
           alt="nxT Innovation Lab — Natalie"
           onError={() => setArtwork(false)}
-          className="h-auto max-h-[9vh] w-auto max-w-[68vw] object-contain opacity-70 drop-shadow-[0_0_18px_rgba(0,0,0,0.9)]"
+          style={{ aspectRatio: ASPECT }}
+          className="block w-full object-contain opacity-[0.85] drop-shadow-[0_2px_20px_rgba(0,0,0,0.85)]"
         />
       ) : (
         <Wordmark />
@@ -43,15 +52,15 @@ export function BrandMark({ className }: { className?: string }) {
 }
 
 /**
- * Type-only lockup, used until the artwork lands.
+ * Type-only lockup, used only if the artwork is missing.
  *
  * `nxT` is set as the brand writes it — lowercase, capital T — which is exactly
  * why the avatar is told to *say* "Next": the eye reads the logo, the speech
- * engine reads her words, and only one of them should see "nxT".
+ * engine reads her words, and only one of them should ever see "nxT".
  */
 function Wordmark() {
   return (
-    <div className="flex items-center gap-3 opacity-70">
+    <div className="flex items-end gap-3 opacity-[0.85]" style={{ aspectRatio: ASPECT }}>
       <span className="font-display text-[clamp(1.1rem,3.2vw,1.9rem)] leading-none tracking-tight text-white">
         nx<span className="text-aurora-cyan">T</span>
       </span>
