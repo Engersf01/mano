@@ -62,12 +62,37 @@ void main() {
   float d = distance(chroma(px.rgb), keyChroma) / max(length(keyChroma), 1e-4);
   float alpha = smoothstep(u_similarity, u_similarity + u_smoothness, d);
 
-  // Spill suppression: near the edges the backdrop bleeds green onto hair and
-  // shoulders. Pull those pixels toward their own luma instead of leaving a
-  // green fringe.
-  float luma = dot(px.rgb, vec3(0.2126, 0.7152, 0.0722));
-  vec3 despilled = mix(px.rgb, vec3(luma), u_spill);
-  vec3 rgb = mix(despilled, px.rgb, alpha);
+  /**
+   * Spill suppression, applied to every pixel — not just the soft edge.
+   *
+   * The backdrop bounces light onto hair and shoulders, so pixels that are
+   * fully kept can still carry green. Blending toward luma only where alpha is
+   * partial therefore leaves a hard green line exactly on the silhouette.
+   *
+   * The fix is the standard despill: green is never allowed to exceed its own
+   * neighbours. A pixel whose key channel dominates gets pulled down to the
+   * average of the other two, which erases the fringe and leaves genuinely
+   * green-free pixels untouched.
+   */
+  vec3 rgb = px.rgb;
+  float keyDominance = max(u_key.g - max(u_key.r, u_key.b), 0.0);
+  if (keyDominance > 0.0) {
+    float neighbours = (rgb.r + rgb.b) * 0.5;
+    rgb.g = mix(rgb.g, min(rgb.g, neighbours), u_spill);
+  } else {
+    // A non-green key (blue screen, say): fall back to desaturating the edge.
+    float luma = dot(rgb, vec3(0.2126, 0.7152, 0.0722));
+    rgb = mix(rgb, mix(rgb, vec3(luma), u_spill), 1.0 - alpha);
+  }
+
+  /**
+   * Sharpen the alpha ramp. Video is chroma-subsampled, so an edge pixel's
+   * colour is averaged with the backdrop beside it and lands half-keyed however
+   * well the key is tuned. An S-curve pushes those toward fully keyed or fully
+   * kept, which narrows the band where a rim can show. It does not shrink the
+   * matte — the despill above is what removes the colour of the rim itself.
+   */
+  alpha = smoothstep(0.0, 1.0, alpha);
 
   gl_FragColor = vec4(rgb, alpha);
 }`;

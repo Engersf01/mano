@@ -4,7 +4,8 @@
  *
  * It owns the HeyGen session (the video and audio have to land where the screen
  * and speakers are) and takes its orders from the console over the SSE channel.
- * Nothing here is interactive beyond the one tap needed to unlock audio.
+ * The only interaction is tapping: once to activate, and thereafter to restore
+ * fullscreen if the browser has dropped out of it.
  *
  * A link carrying `?avatar=<id>` runs standalone instead: the panel starts that
  * session itself on the activation tap, with no console and no control channel.
@@ -76,22 +77,37 @@ export default function DisplayClient() {
   }, []);
 
   /**
-   * The tap both unlocks audio and, on a standalone link, starts the session —
-   * one gesture, because the browser only trusts the first one.
+   * Fullscreen is the difference between a panel and a web page with an address
+   * bar on top. It can only be requested from a user gesture, and the browser
+   * drops out of it on its own (a back swipe, the screen locking), so the whole
+   * stage stays tappable and re-requests it rather than relying on the one tap
+   * at the gate. An installed home-screen launch never needs this — the app
+   * manifest asks for fullscreen up front.
+   */
+  const goFullscreen = useCallback(async () => {
+    if (document.fullscreenElement) return;
+    try {
+      await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+    } catch {
+      try {
+        // Older WebViews only accept the no-argument form.
+        await document.documentElement.requestFullscreen();
+      } catch {
+        // Refused (or unsupported): the panel just stays windowed.
+      }
+    }
+  }, []);
+
+  /**
+   * The tap does triple duty — unlock audio, go fullscreen, and on a standalone
+   * link start the session — because the browser only trusts the first gesture.
    */
   const activate = useCallback(() => {
     setActivated(true);
-
-    /**
-     * The same tap that unlocks audio is the only user gesture we get, so spend
-     * it on fullscreen too — otherwise the panel shows the browser's address bar
-     * above the avatar. Best-effort: a browser that refuses simply stays windowed.
-     */
-    void document.documentElement.requestFullscreen?.({ navigationUI: "hide" }).catch(() => {});
-
+    void goFullscreen();
     const request = autoStartRef.current;
     if (request) void sessionRef.current.start(request);
-  }, []);
+  }, [goFullscreen]);
 
   const blockedReason = useMemo(() => (activated ? micBlockedReason() : null), [activated]);
 
@@ -236,7 +252,10 @@ export default function DisplayClient() {
   }
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-ink-950">
+    <main
+      className="relative h-screen w-screen overflow-hidden bg-ink-950"
+      onPointerDown={() => void goFullscreen()}
+    >
       <AvatarStage
         videoRef={session.setVideoElement}
         settings={settings}
