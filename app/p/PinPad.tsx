@@ -32,6 +32,17 @@ export default function PinPad() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [shake, setShake] = useState(false);
+  /**
+   * Index of the digit to show in the clear.
+   *
+   * Masking every digit the instant it lands is what made this hard to use on
+   * the real panel: with nothing but identical dots there is no way to tell a
+   * mis-tap from a missed tap. Showing the last one briefly, the way a phone
+   * lock screen does, gives that back without putting the PIN on display in
+   * front of a room.
+   */
+  const [revealed, setRevealed] = useState(-1);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const busyRef = useRef(false);
 
   useEffect(() => {
@@ -80,15 +91,28 @@ export default function PinPad() {
   const press = useCallback(
     (key: string) => {
       setError(null);
-      if (key === "back") return setPin((current) => current.slice(0, -1));
-      if (key === "clear") return setPin("");
+      if (revealTimer.current) clearTimeout(revealTimer.current);
+      if (key === "back") {
+        setRevealed(-1);
+        return setPin((current) => current.slice(0, -1));
+      }
+      if (key === "clear") {
+        setRevealed(-1);
+        return setPin("");
+      }
       setPin((current) => {
         const next = (current + key).slice(0, MAX_PIN_LENGTH);
+        setRevealed(next.length - 1);
+        revealTimer.current = setTimeout(() => setRevealed(-1), 800);
         return next;
       });
     },
     [],
   );
+
+  useEffect(() => () => {
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+  }, []);
 
   // A keyboard, for whoever has one attached to the panel.
   useEffect(() => {
@@ -108,65 +132,78 @@ export default function PinPad() {
   const ready = pin.length >= MIN_PIN_LENGTH;
 
   return (
-    <main className="flex h-screen w-screen select-none flex-col items-center justify-center gap-7 bg-ink-950 px-6">
-      <div className="flex flex-col items-center gap-2">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-aurora-cyan/15 text-aurora-cyan">
-          <LockKeyhole size={20} />
-        </span>
-        <span className="font-display text-xl tracking-tight text-white">Avatar panel</span>
-        <span className="text-xs text-ink-400">Enter the PIN for this activity</span>
+    <main className="flex h-screen w-screen select-none items-center justify-center bg-ink-950 p-4">
+      {/* One bordered card rather than elements spread down a tall panel: at a
+          stand you are looking at it from a step away, and a group the eye can
+          take in at once beats a column it has to travel. */}
+      <div className="flex w-full max-w-[17rem] flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-5">
+        <div className="flex items-center gap-2 text-ink-300">
+          <LockKeyhole size={14} className="text-aurora-cyan" />
+          <span className="text-xs uppercase tracking-[0.2em]">Enter the PIN</span>
+        </div>
+
+        {/* Boxes, not loose dots — the count is readable at a glance, and the
+            digit just pressed shows before it masks. */}
+        <div
+          className={`flex items-center gap-2 ${shake ? "animate-[shake_0.45s_ease-in-out]" : ""}`}
+        >
+          {Array.from({ length: Math.max(MIN_PIN_LENGTH, pin.length) }).map((_, index) => (
+            <span
+              key={index}
+              className={`flex h-11 w-9 items-center justify-center rounded-lg border text-xl font-medium transition ${
+                index < pin.length
+                  ? "border-aurora-cyan bg-aurora-cyan/25 text-white"
+                  : "border-white/15 bg-transparent text-transparent"
+              }`}
+            >
+              {/* Filled has to be unmistakable from a step away: a low-contrast
+                  dot on a low-contrast box is exactly what made this unreadable
+                  on the panel. */}
+              {index === revealed ? pin[index] : index < pin.length ? "●" : ""}
+            </span>
+          ))}
+        </div>
+
+        <div className="grid w-full grid-cols-3 gap-2">
+          {KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              disabled={busy}
+              onClick={() => press(key)}
+              className="flex h-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl font-light text-white transition active:scale-95 active:bg-aurora-cyan/20 disabled:opacity-40"
+            >
+              {key === "back" ? (
+                <Delete size={17} />
+              ) : key === "clear" ? (
+                <span className="text-[10px] uppercase tracking-[0.2em] text-ink-400">clr</span>
+              ) : (
+                key
+              )}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          disabled={!ready || busy}
+          onClick={() => void submit(pin)}
+          className={`flex h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition active:scale-95 ${
+            ready && !busy
+              ? "border-aurora-cyan bg-aurora-cyan/25 text-white"
+              : "border-white/10 bg-white/5 text-ink-500"
+          }`}
+        >
+          {busy ? <Loader2 size={15} className="animate-spin" /> : null}
+          Open
+        </button>
+
+        {error && (
+          <p className="text-balance text-center text-[11px] leading-relaxed text-aurora-pink">
+            {error}
+          </p>
+        )}
       </div>
-
-      {/* Dots rather than digits: the PIN gets typed in front of visitors. */}
-      <div
-        className={`flex items-center gap-3 ${shake ? "animate-[shake_0.45s_ease-in-out]" : ""}`}
-        style={{ minHeight: "1.25rem" }}
-      >
-        {Array.from({ length: Math.max(MIN_PIN_LENGTH, pin.length) }).map((_, index) => (
-          <span
-            key={index}
-            className={`h-3 w-3 rounded-full transition ${
-              index < pin.length ? "bg-aurora-cyan" : "bg-white/15"
-            }`}
-          />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        {KEYS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            disabled={busy}
-            onClick={() => press(key)}
-            className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-2xl font-light text-white transition active:scale-95 active:bg-aurora-cyan/20 disabled:opacity-40"
-          >
-            {key === "back" ? (
-              <Delete size={20} />
-            ) : key === "clear" ? (
-              <span className="text-xs uppercase tracking-[0.2em] text-ink-400">clr</span>
-            ) : (
-              key
-            )}
-          </button>
-        ))}
-      </div>
-
-      <button
-        type="button"
-        disabled={!ready || busy}
-        onClick={() => void submit(pin)}
-        className="flex h-12 w-[14.5rem] items-center justify-center gap-2 rounded-2xl border border-aurora-cyan/30 bg-aurora-cyan/15 text-sm font-medium text-aurora-cyan transition active:scale-95 disabled:opacity-30"
-      >
-        {busy ? <Loader2 size={16} className="animate-spin" /> : null}
-        Open
-      </button>
-
-      {error && (
-        <p className="max-w-sm text-balance text-center text-xs leading-relaxed text-aurora-pink">
-          {error}
-        </p>
-      )}
 
       <style>{`@keyframes shake {
         0%, 100% { transform: translateX(0); }
