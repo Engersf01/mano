@@ -3,12 +3,13 @@
 A HeyGen **LiveAvatar** session driven from this machine and rendered on an
 attached Android display, plus a UI for managing what the avatar knows.
 
-Two routes:
+Three routes:
 
 | Route | Runs on | Purpose |
 |---|---|---|
+| `/p` | the Android panel | **The short one to type.** A PIN picks which configuration opens |
 | `/avatar` | your laptop | Operator console — pick the avatar, start/stop, speak, manage knowledge |
-| `/avatar/display?room=<name>` | the Android panel | Full-bleed avatar video and audio. The only interaction is one activation tap |
+| `/avatar/display?room=<name>` | the Android panel | Full-bleed avatar video and audio, configured by query string |
 
 ## Setup
 
@@ -41,10 +42,70 @@ Two routes:
 
 4. Create a context under **Knowledge**, select an avatar, press **Start session**.
 
+## The panel's short URL, and PINs
+
+A standalone link carries the whole session config in its query string, which is
+fine to click and miserable to type — and the panel at a stand *is* typed into,
+on a monitor's on-screen keyboard, by someone standing up. So the panel has one
+short address:
+
+```
+<your-deployment>/p
+```
+
+It shows a PIN pad. The PIN does two jobs: it says **which configuration to
+open**, and it keeps a passer-by from starting a session on the stand. Changing
+activity is four digits instead of a new link.
+
+### Presets
+
+Configurations live in `src/avatar/presets.ts` — avatar, context, language,
+microphone, and any framing overrides — each with a short `id`, a name and a
+one-line description. The name is shown on the panel once it unlocks, so it is
+obvious which one is running.
+
+### PINs
+
+**The PINs are not in the repository, and must not be: it is public.** They come
+from one environment variable, which also means changing a PIN takes no deploy:
+
+```
+AVATAR_PINS="482199:natalie, 731044:natalie-en, 555000:natalie-quiet"
+```
+
+Each entry is `pin:preset-id`. Unset, `/p` says so plainly rather than opening —
+a gate that lets everyone through is worse than no gate, because it looks like
+one.
+
+What the PIN is and is not:
+
+- Four to eight digits. **Six or more is the sensible choice**: four digits is
+  ten thousand guesses, which is nothing over HTTP.
+- Every attempt costs 400 ms, right or wrong, and an instance that has seen five
+  failures adds two seconds more. That turns a script from seconds into hours —
+  it does not make a PIN unguessable. Serverless spreads requests over
+  instances, so the counter slows an attacker rather than stopping one.
+- The comparison is constant-time and every entry is walked even after a match,
+  so neither the timing nor the error message says how close a guess was.
+- It gates the **panel**, not the HeyGen API routes. Anyone who knows the API
+  shape can still call those directly; that is a separate hole, and still open.
+
+Once unlocked, the panel remembers the preset in `sessionStorage`, so an
+accidental reload mid-conference does not send someone hunting for the PIN.
+
+### Making the address shorter still
+
+Most of what gets typed is the host, not the path. In Vercel, **Project →
+Settings → Domains**, add any free `*.vercel.app` subdomain — `nxt-natalie.vercel.app`
+turns the panel address into `nxt-natalie.vercel.app/p`, about a quarter of the
+typing. A custom domain you own is shorter again.
+
 ## Standalone panel links
 
 A link carrying `?avatar=<id>` runs the panel on its own: it starts that session
-itself on the activation tap, with no console and no control channel.
+itself on the activation tap, with no console and no control channel. This is
+the long-hand form of a preset — useful for trying a configuration out before
+giving it a PIN, and for anything a preset doesn't cover.
 
 ```
 /avatar/display?avatar=<id>&context=<id>&voice=<id>&lang=en&mic=1
@@ -338,6 +399,9 @@ app/api/heygen/session              mints a session token
 app/api/avatar/channel              SSE, console ↔ display
 app/api/avatar/command              publish one control message
 app/api/avatar/display-url          LAN URLs for the panel
+app/api/avatar/preset               PIN -> preset, the panel's front door
+app/p/                              the short URL and its PIN pad
+src/avatar/presets.ts               the named configurations (PINs live in env)
 src/heygen/api.ts                   server REST client — the only reader of the key
 src/heygen/normalize.ts             wire snake_case ↔ app camelCase + validation
 src/heygen/useAvatarSession.ts      React wrapper around LiveAvatarSession

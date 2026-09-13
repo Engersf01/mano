@@ -27,6 +27,7 @@ import {
 import { parseStandaloneParams } from "@/heygen/standalone";
 import { micBlockedReason, useAvatarSession } from "@/heygen/useAvatarSession";
 import type { SessionRequest } from "@/heygen/types";
+import type { ResolvedPreset } from "@/avatar/presets";
 import { AvatarStage } from "@/ui/avatar/AvatarStage";
 import { BrandMark } from "@/ui/avatar/BrandMark";
 
@@ -46,7 +47,12 @@ const IDLE_CHECK_MS = 5000;
  */
 const WAKE_AFTER_SILENCE_MS = 15_000;
 
-export default function DisplayClient() {
+/**
+ * `preset` is the PIN route handing the panel its configuration directly,
+ * instead of the query string carrying it. Everything downstream is the same:
+ * a preset is standalone, exactly like a link that names an avatar.
+ */
+export default function DisplayClient({ preset }: { preset?: ResolvedPreset }) {
   /** The tap gate: Android Chrome won't play audio until the user asks it to. */
   const [activated, setActivated] = useState(false);
   const [room, setRoom] = useState("default");
@@ -123,13 +129,21 @@ export default function DisplayClient() {
     roomRef.current = value;
     setRoom(value);
 
+    if (preset) {
+      setSettings(preset.settings);
+      autoStartRef.current = preset.request;
+      standaloneRef.current = true;
+      setStandalone(true);
+      return;
+    }
+
     const parsed = parseStandaloneParams(search);
     setSettings(parsed.settings);
     setLinkWarnings(parsed.warnings);
     autoStartRef.current = parsed.request;
     standaloneRef.current = Boolean(parsed.request);
     setStandalone(Boolean(parsed.request));
-  }, []);
+  }, [preset]);
 
   /**
    * Fullscreen is the difference between a panel and a web page with an address
@@ -431,8 +445,9 @@ export default function DisplayClient() {
           {standalone && " This link starts its own session — no console needed."}
         </span>
         <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-ink-200">
-          room · {room}
+          {preset ? preset.name : `room · ${room}`}
         </span>
+        {preset && <span className="-mt-3 text-xs text-ink-400">{preset.description}</span>}
         <span className="max-w-sm text-[11px] leading-relaxed text-ink-400">
           Restart the conversation with the button top right, by holding anywhere for a
           moment, or with <kbd className="font-mono text-ink-200">R</kbd> on a keyboard.
