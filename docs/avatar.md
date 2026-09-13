@@ -64,7 +64,8 @@ itself on the activation tap, with no console and no control channel.
 | `chroma` | Green-backdrop removal. **On by default** — pass `chroma=0` for the raw feed |
 | `key` | Backdrop colour to remove, hex without `#`. Omit it and the colour is **sampled from the feed** — set this only if detection picks wrong |
 | `similarity` | Key strength as a fraction from the key colour (0) to neutral grey (1). Must stay below 1 or unsaturated pixels vanish. Default `0.45` |
-| `smoothness` `spill` | Edge softness and green-spill removal (0–1) |
+| `smoothness` | Softness of the key's edge (0–1) |
+| `spill` | Green-spill removal, applied to **every** pixel, not just the edge (0–1, default `0.8`) |
 
 The console builds this link for you — see **Standalone link** in the Display
 panel, which bakes in whatever avatar, voice and context are currently selected.

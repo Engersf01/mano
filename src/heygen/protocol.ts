@@ -46,7 +46,11 @@ export const DEFAULT_CHROMA: ChromaSettings = {
    */
   similarity: 0.45,
   smoothness: 0.1,
-  spill: 0.5,
+  /**
+   * Runs on every pixel, so it can afford to be firm: chroma-subsampled video
+   * puts a green rim on the silhouette that a timid value leaves behind.
+   */
+  spill: 0.8,
 };
 
 /** Presentation knobs the operator can change on the panel without restarting. */
