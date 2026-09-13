@@ -438,17 +438,23 @@ export default function DisplayClient({ preset }: { preset?: ResolvedPreset }) {
         <span className="flex h-16 w-16 items-center justify-center rounded-3xl bg-aurora-cyan/15 text-aurora-cyan">
           <MonitorPlay size={26} />
         </span>
-        <span className="font-display text-3xl tracking-tight text-white">Avatar display</span>
-        <span className="max-w-sm text-sm text-ink-300">
+        <span className="font-display text-[clamp(20px,6vw,30px)] tracking-tight text-white">
+          Avatar display
+        </span>
+        <span className="max-w-[min(24rem,90vw)] text-[clamp(12px,3.4vw,14px)] text-ink-300">
           Tap anywhere to activate. The browser needs one touch before it will play the
           avatar&rsquo;s voice, and the same tap takes the panel fullscreen.
           {standalone && " This link starts its own session — no console needed."}
         </span>
-        <span className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-mono text-xs uppercase tracking-[0.2em] text-ink-200">
+        <span className="max-w-[92vw] text-balance rounded-full border border-white/10 bg-white/5 px-[16px] py-[6px] text-center font-mono text-[clamp(10px,2.8vw,12px)] uppercase tracking-[0.2em] text-ink-200">
           {preset ? preset.name : `room · ${room}`}
         </span>
-        {preset && <span className="-mt-3 text-xs text-ink-400">{preset.description}</span>}
-        <span className="max-w-sm text-[11px] leading-relaxed text-ink-400">
+        {preset && (
+          <span className="-mt-3 max-w-[92vw] text-center text-[clamp(10px,3vw,12px)] text-ink-400">
+            {preset.description}
+          </span>
+        )}
+        <span className="max-w-[min(24rem,90vw)] text-[clamp(10px,2.8vw,11px)] leading-relaxed text-ink-400">
           Restart the conversation with the button top right, by holding anywhere for a
           moment, or with <kbd className="font-mono text-ink-200">R</kbd> on a keyboard.
           {settings.wakeWord &&
@@ -457,7 +463,7 @@ export default function DisplayClient({ preset }: { preset?: ResolvedPreset }) {
 
         {/* The last moment anyone is looking at this screen on purpose. */}
         {linkWarnings.length > 0 && (
-          <span className="max-w-sm rounded-xl border border-aurora-gold/30 bg-aurora-gold/10 px-3 py-2 text-xs leading-relaxed text-aurora-gold">
+          <span className="max-w-[min(24rem,90vw)] rounded-xl border border-aurora-gold/30 bg-aurora-gold/10 px-3 py-2 text-[clamp(11px,3vw,12px)] leading-relaxed text-aurora-gold">
             {linkWarnings.join(" ")}
           </span>
         )}
@@ -487,7 +493,7 @@ export default function DisplayClient({ preset }: { preset?: ResolvedPreset }) {
                   : "Standing by"}
             </span>
             {session.error && (
-              <p className="max-w-md text-balance text-sm text-aurora-pink">{session.error}</p>
+              <p className="max-w-[min(28rem,92vw)] text-balance text-[clamp(12px,3.4vw,14px)] text-aurora-pink">{session.error}</p>
             )}
             <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-400">
               room · {room}

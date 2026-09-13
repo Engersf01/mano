@@ -219,24 +219,24 @@ export default function PinPad() {
    */
   if (setup && !setup.configured) {
     return (
-      <main className="flex h-screen w-screen items-center justify-center bg-ink-950 p-5">
-        <div className="flex w-full max-w-sm flex-col gap-3 rounded-3xl border border-aurora-gold/30 bg-aurora-gold/5 p-5 text-left">
+      <main className="flex h-screen w-screen items-center justify-center overflow-y-auto bg-ink-950 p-4">
+        <div className="flex w-[min(380px,92vw)] flex-col gap-[12px] rounded-[24px] border border-aurora-gold/30 bg-aurora-gold/5 p-[16px] text-left">
           <div className="flex items-center gap-2 text-aurora-gold">
             <TriangleAlert size={16} />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em]">
+            <span className="text-[clamp(10px,2.8vw,12px)] font-semibold uppercase tracking-[0.2em]">
               Not set up yet
             </span>
           </div>
-          <p className="text-sm leading-relaxed text-ink-100">
+          <p className="text-[clamp(12px,3.4vw,14px)] leading-relaxed text-ink-100">
             This panel has no PINs, so nothing can open it. Add an environment
             variable to the deployment:
           </p>
-          <code className="block rounded-xl bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-aurora-cyan">
+          <code className="block break-all rounded-[12px] bg-black/40 p-[12px] font-mono text-[clamp(9px,2.6vw,11px)] leading-relaxed text-aurora-cyan">
             AVATAR_PINS
             <br />
             482199:natalie, 731044:natalie-en
           </code>
-          <p className="text-xs leading-relaxed text-ink-300">
+          <p className="text-[clamp(10px,3vw,12px)] leading-relaxed text-ink-300">
             In Vercel: <strong className="text-ink-100">Settings → Environment Variables</strong>,
             then <strong className="text-ink-100">redeploy</strong> — an existing deployment does
             not pick up a new variable on its own.
@@ -244,7 +244,7 @@ export default function PinPad() {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-1 h-11 rounded-xl border border-white/15 bg-white/5 text-sm text-ink-100 active:scale-95"
+            className="mt-1 h-[clamp(36px,9.5vw,44px)] rounded-xl border border-white/15 bg-white/5 text-[clamp(12px,3.4vw,14px)] text-ink-100 active:scale-95"
           >
             Check again
           </button>
@@ -257,7 +257,7 @@ export default function PinPad() {
 
   return (
     <main
-      className="flex h-screen w-screen select-none items-center justify-center bg-ink-950 p-4"
+      className="flex h-screen w-screen select-none items-center justify-center overflow-y-auto bg-ink-950 p-3"
       onPointerDown={holdFocus}
     >
       {/* Pulls keyboard focus into the page. Not hidden with display:none —
@@ -274,20 +274,20 @@ export default function PinPad() {
       {/* One bordered card rather than elements spread down a tall panel: at a
           stand you are looking at it from a step away, and a group the eye can
           take in at once beats a column it has to travel. */}
-      <div className="flex w-full max-w-[17rem] flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.03] px-4 py-5">
+      <div className="flex w-[min(272px,86vw)] flex-col items-center gap-[12px] rounded-[24px] border border-white/10 bg-white/[0.03] px-[16px] py-[16px]">
         <div className="flex items-center gap-2 text-ink-300">
           {busy ? (
             <Loader2 size={14} className="animate-spin text-aurora-cyan" />
           ) : (
             <LockKeyhole size={14} className="text-aurora-cyan" />
           )}
-          <span className="text-xs uppercase tracking-[0.2em]">
+          <span className="text-[clamp(10px,2.8vw,12px)] uppercase tracking-[0.2em]">
             {busy ? "Checking" : "Enter the PIN"}
           </span>
         </div>
 
         {setup?.warning && (
-          <p className="rounded-xl border border-aurora-gold/30 bg-aurora-gold/10 px-3 py-2 text-[11px] leading-relaxed text-aurora-gold">
+          <p className="rounded-xl border border-aurora-gold/30 bg-aurora-gold/10 px-3 py-2 text-[clamp(10px,2.8vw,11px)] leading-relaxed text-aurora-gold">
             {setup.warning}
           </p>
         )}
@@ -295,12 +295,12 @@ export default function PinPad() {
         {/* Boxes, not loose dots — the count is readable at a glance, and the
             digit just pressed shows before it masks. */}
         <div
-          className={`flex items-center gap-2 ${shake ? "animate-[shake_0.45s_ease-in-out]" : ""}`}
+          className={`flex items-center gap-[8px] ${shake ? "animate-[shake_0.45s_ease-in-out]" : ""}`}
         >
           {Array.from({ length: Math.max(MIN_PIN_LENGTH, pin.length) }).map((_, index) => (
             <span
               key={index}
-              className={`flex h-11 w-9 items-center justify-center rounded-lg border text-xl font-medium transition ${
+              className={`flex h-[clamp(34px,9vw,44px)] w-[clamp(28px,7.5vw,36px)] items-center justify-center rounded-lg border text-[clamp(15px,4.5vw,20px)] font-medium transition ${
                 index < pin.length
                   ? "border-aurora-cyan bg-aurora-cyan/25 text-white"
                   : "border-white/15 bg-transparent text-transparent"
@@ -314,19 +314,19 @@ export default function PinPad() {
           ))}
         </div>
 
-        <div className="grid w-full grid-cols-3 gap-2">
+        <div className="grid w-full grid-cols-3 gap-[8px]">
           {KEYS.map((key) => (
             <button
               key={key}
               type="button"
               disabled={busy}
               onClick={() => press(key)}
-              className="flex h-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl font-light text-white transition active:scale-95 active:bg-aurora-cyan/20 disabled:opacity-40"
+              className="flex h-[clamp(38px,10vw,48px)] items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[clamp(15px,4.5vw,20px)] font-light text-white transition active:scale-95 active:bg-aurora-cyan/20 disabled:opacity-40"
             >
               {key === "back" ? (
                 <Delete size={17} />
               ) : key === "clear" ? (
-                <span className="text-[10px] uppercase tracking-[0.2em] text-ink-400">clr</span>
+                <span className="text-[clamp(9px,2.4vw,10px)] uppercase tracking-[0.2em] text-ink-400">clr</span>
               ) : (
                 key
               )}
@@ -338,7 +338,7 @@ export default function PinPad() {
           type="button"
           disabled={!ready || busy}
           onClick={() => void submit(pin)}
-          className={`flex h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition active:scale-95 ${
+          className={`flex h-[clamp(36px,9.5vw,44px)] w-full items-center justify-center gap-2 rounded-xl border text-[clamp(12px,3.4vw,14px)] font-semibold transition active:scale-95 ${
             ready && !busy
               ? "border-aurora-cyan bg-aurora-cyan/25 text-white"
               : "border-white/10 bg-white/5 text-ink-500"
@@ -349,13 +349,13 @@ export default function PinPad() {
         </button>
 
         {lengths.length > 0 && (
-          <p className="text-center text-[10px] leading-relaxed text-ink-500">
+          <p className="text-center text-[clamp(9px,2.4vw,10px)] leading-relaxed text-ink-500">
             Opens on the last digit — no need to press anything else.
           </p>
         )}
 
         {error && (
-          <p className="w-full text-balance rounded-xl border border-aurora-pink/30 bg-aurora-pink/10 px-3 py-2 text-center text-xs leading-relaxed text-aurora-pink">
+          <p className="w-full text-balance rounded-xl border border-aurora-pink/30 bg-aurora-pink/10 px-3 py-2 text-center text-[clamp(11px,3vw,12px)] leading-relaxed text-aurora-pink">
             {error}
           </p>
         )}
