@@ -59,6 +59,8 @@ export type DisplaySettings = {
   /** Mirror horizontally — some panels sit behind a half-silvered mirror. */
   mirror: boolean;
   showCaptions: boolean;
+  /** The stand's lockup along the bottom of the panel. */
+  showBrand: boolean;
   /** CSS color behind the avatar. */
   background: string;
   /** 0.5–1.5 — trims the frame when the panel crops the edges. */
@@ -77,6 +79,9 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   fit: "cover",
   mirror: false,
   showCaptions: false,
+  // On by default: a branded stand is the point of the panel, and nobody should
+  // have to remember a query parameter to get the logo back.
+  showBrand: true,
   // Pure black, not Mano's near-black ink: an emissive panel still lights a
   // #03040c pixel, and the point of the key is that the backdrop emits nothing.
   background: "#000000",

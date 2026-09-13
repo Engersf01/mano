@@ -180,6 +180,12 @@ export function StageSettings({
         </Field>
 
         <Toggle
+          checked={settings.showBrand}
+          onChange={(showBrand) => onChange({ showBrand })}
+          label="Show the nxT · Natalie lockup"
+        />
+
+        <Toggle
           checked={settings.showCaptions}
           onChange={(showCaptions) => onChange({ showCaptions })}
           label="Show captions on the panel"
