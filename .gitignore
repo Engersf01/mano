@@ -12,3 +12,8 @@ dist
 .vscode
 *.tsbuildinfo
 next-env.d.ts
+
+# Speaker hub's local store — attendee names, emails and survey answers.
+# Never committed: it is real people's data, and on a real deployment this
+# lives in KV instead.
+.data/

@@ -50,6 +50,9 @@ export default function LandingPage() {
           <Link href="/avatar" className="rounded-xl px-3 py-1.5 hover:bg-white/5 hover:text-white">
             Avatar
           </Link>
+          <Link href="/speaker" className="rounded-xl px-3 py-1.5 hover:bg-white/5 hover:text-white">
+            Speaker
+          </Link>
           <Link
             href="/present"
             className="flex items-center gap-1 rounded-xl bg-aurora-cyan/15 px-3 py-1.5 text-aurora-cyan hover:bg-aurora-cyan/25"
