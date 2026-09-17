@@ -191,8 +191,23 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
  * plainly and points the host at their own console, which is a better first
  * run than a stock clip nobody meant to publish.
  */
+/**
+ * The session video, served by this deployment out of `public/`.
+ *
+ * Self-hosted rather than embedded from Drive on purpose: a same-origin
+ * `<video>` reports its own `currentTime`, which is what lets the countdown
+ * follow real playback and stop when someone pauses. A Drive, YouTube or
+ * Vimeo iframe cannot tell the page any of that, so the countdown there can
+ * only run on wall time. Drive links still work if pasted into the console —
+ * see `resolveVideo` — they just cost that.
+ *
+ * Runtime is 91.7s, so the 90-second countdown reaches zero a beat before the
+ * last frame rather than after it.
+ */
+const SESSION_VIDEO = "/media/neumomeet-90s.mp4";
+
 export const DEFAULT_SETTINGS: SpeakerSettings = {
-  videoUrl: process.env.NEXT_PUBLIC_SPEAKER_VIDEO_URL ?? "",
+  videoUrl: process.env.NEXT_PUBLIC_SPEAKER_VIDEO_URL ?? SESSION_VIDEO,
   videoPoster: "",
   videoTitle: "Empieza aquí — y luego elige tu siguiente paso",
   timeZone: "America/New_York",

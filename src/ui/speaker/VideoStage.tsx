@@ -13,7 +13,7 @@
  * way the timer starts when they actually start watching.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Film, Play, Timer } from "lucide-react";
+import { CheckCircle2, Film, Play, Timer, VideoOff } from "lucide-react";
 import { VIDEO_COUNTDOWN_SECONDS } from "@/speaker/config";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +35,19 @@ type Embed =
 export function resolveVideo(url: string): Embed {
   const trimmed = url.trim();
   if (!trimmed) return { kind: "none" };
+
+  /**
+   * A root-relative path is a file this deployment serves itself, out of
+   * `public/`. Worth supporting as its own case: it is the only arrangement
+   * where the countdown can follow real playback, because a same-origin
+   * `<video>` reports its own `currentTime` and a pause with it.
+   *
+   * `//host/path` is protocol-relative and points off-site, so it is not a
+   * local path however much it looks like one.
+   */
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
+    return { kind: "file", src: trimmed };
+  }
 
   let parsed: URL;
   try {
@@ -64,14 +77,38 @@ export function resolveVideo(url: string): Embed {
   }
   if (host === "player.vimeo.com") return { kind: "embed", src: parsed.toString() };
 
+  /**
+   * Google Drive. The link its share dialog hands out ends in `/view`, which
+   * is a page, not a video — dropped into a `<video>` it plays nothing and
+   * into an iframe it renders Drive's whole UI. `/preview` is the player.
+   *
+   * The file has to be shared with "anyone with the link"; a restricted file
+   * renders a Google sign-in page inside the frame, which looks like this app
+   * is broken rather than the file being private.
+   */
+  if (host === "drive.google.com") {
+    const id =
+      /\/file\/d\/([^/]+)/.exec(parsed.pathname)?.[1] ?? parsed.searchParams.get("id");
+    return id
+      ? { kind: "embed", src: `https://drive.google.com/file/d/${id}/preview` }
+      : { kind: "none" };
+  }
+
   return { kind: "file", src: parsed.toString() };
 }
 
-/** Adds autoplay without trampling a link's existing parameters, such as
- *  Vimeo's `h=` hash for an unlisted video. */
+/**
+ * Adds autoplay without trampling a link's existing parameters, such as
+ * Vimeo's `h=` hash for an unlisted video.
+ *
+ * Drive's preview player takes no autoplay parameter, so it is left alone —
+ * adding one would put a query string on the URL that does nothing, and the
+ * viewer presses play inside the frame as its own second step.
+ */
 function withAutoplay(src: string) {
   try {
     const url = new URL(src);
+    if (url.hostname === "drive.google.com") return src;
     url.searchParams.set("autoplay", "1");
     return url.toString();
   } catch {
@@ -99,6 +136,17 @@ export function VideoStage({
   const [started, setStarted] = useState(false);
   const [remaining, setRemaining] = useState(VIDEO_COUNTDOWN_SECONDS);
   const [watched, setWatched] = useState(false);
+  /**
+   * The file was served but will not play — a codec the browser lacks, a
+   * truncated transfer, a dead link.
+   *
+   * Without this the page is a trap: a stalled player above a countdown that
+   * can never advance, because the clock is driven by `timeupdate` events a
+   * broken video never fires. Nobody reaches the actions, which are the entire
+   * point of the page. So the failure is stated, and the actions are released
+   * anyway — the video is an introduction, not a gate.
+   */
+  const [failed, setFailed] = useState(false);
   const element = useRef<HTMLVideoElement | null>(null);
   const announced = useRef(false);
 
@@ -154,6 +202,22 @@ export function VideoStage({
     void element.current?.play().catch(() => {});
   }, []);
 
+  const onFailure = useCallback(() => {
+    setFailed(true);
+    /**
+     * Only move the page if they had actually pressed play.
+     *
+     * `preload="metadata"` means the browser tries to decode before anyone
+     * touches anything, so this can fire on load — and scrolling someone's
+     * page out from under them on arrival, because a video they never asked
+     * for could not start, is worse than the failure it is reacting to.
+     *
+     * Deliberately not `markWatched` either way: they did not watch it, and
+     * recording otherwise would hide the problem from the host's own page.
+     */
+    if (started) onWatched?.();
+  }, [started, onWatched]);
+
   const onTimeUpdate = useCallback(
     (event: React.SyntheticEvent<HTMLVideoElement>) => {
       const left = VIDEO_COUNTDOWN_SECONDS - event.currentTarget.currentTime;
@@ -186,13 +250,15 @@ export function VideoStage({
         <span
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-base font-bold tabular-nums ring-1",
-            !showCountdown
-              ? "bg-white text-slate-600 ring-slate-200"
-              : remaining <= 0
-                ? "bg-cyan-700 text-white ring-cyan-700"
-                : remaining <= 10
-                  ? "bg-amber-50 text-amber-800 ring-amber-300"
-                  : "bg-white text-slate-900 ring-slate-300",
+            failed
+              ? "bg-slate-100 text-slate-400 ring-slate-200"
+              : !showCountdown
+                ? "bg-white text-slate-600 ring-slate-200"
+                : remaining <= 0
+                  ? "bg-cyan-700 text-white ring-cyan-700"
+                  : remaining <= 10
+                    ? "bg-amber-50 text-amber-800 ring-amber-300"
+                    : "bg-white text-slate-900 ring-slate-300",
           )}
         >
           {remaining <= 0 && started ? <CheckCircle2 size={15} /> : <Timer size={15} />}
@@ -217,11 +283,13 @@ export function VideoStage({
         </div>
 
         <span className="hidden shrink-0 text-[11px] font-medium text-slate-500 sm:inline">
-          {!started
-            ? "Pulsa reproducir para empezar"
-            : remaining <= 0
-              ? "Listo — elige una acción abajo"
-              : "Reproduciendo"}
+          {failed
+            ? "Sigue abajo"
+            : !started
+              ? "Pulsa reproducir para empezar"
+              : remaining <= 0
+                ? "Listo — elige una acción abajo"
+                : "Reproduciendo"}
         </span>
       </div>
 
@@ -249,13 +317,15 @@ export function VideoStage({
             preload="metadata"
             onTimeUpdate={onTimeUpdate}
             onEnded={markWatched}
+            onError={onFailure}
             className="absolute inset-0 h-full w-full object-contain"
           />
         )}
 
         {/* The cover. Stays up for an embed until play, and for a file too, so
-            the countdown has a single well-defined moment to start from. */}
-        {video.kind !== "none" && !started && (
+            the countdown has a single well-defined moment to start from — but
+            never over a player that has already failed. */}
+        {video.kind !== "none" && !started && !failed && (
           <button
             type="button"
             onClick={start}
@@ -269,6 +339,19 @@ export function VideoStage({
               Reproducir — {VIDEO_COUNTDOWN_SECONDS} segundos
             </span>
           </button>
+        )}
+
+        {failed && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-100 px-6 text-center">
+            <VideoOff size={26} className="text-slate-400" />
+            <p className="text-sm font-medium text-slate-700">
+              El video no se pudo reproducir
+            </p>
+            <p className="max-w-sm text-xs leading-relaxed text-slate-500">
+              Puede ser tu conexión o el navegador. No hace falta para nada de lo de
+              abajo — sigue y elige una acción.
+            </p>
+          </div>
         )}
 
         {video.kind === "none" && (
@@ -291,9 +374,11 @@ export function VideoStage({
             {title}
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            {watched
-              ? "Gracias por verlo — elige una acción abajo."
-              : `${VIDEO_COUNTDOWN_SECONDS} segundos, y luego elige una de las tres acciones de abajo.`}
+            {failed
+              ? "El video no cargó, pero las tres acciones de abajo funcionan igual."
+              : watched
+                ? "Gracias por verlo — elige una acción abajo."
+                : `${VIDEO_COUNTDOWN_SECONDS} segundos, y luego elige una de las tres acciones de abajo.`}
           </p>
         </div>
 

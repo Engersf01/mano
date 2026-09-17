@@ -23,6 +23,9 @@ const bad = (error: string, status = 400) => NextResponse.json({ error }, { stat
 function safeUrl(value: unknown) {
   const candidate = text(value, 600);
   if (!candidate) return "";
+  // A root-relative path is a file this deployment serves out of `public/`.
+  // `//host/path` is protocol-relative and leaves the site, so it is not one.
+  if (candidate.startsWith("/") && !candidate.startsWith("//")) return candidate;
   try {
     const url = new URL(candidate);
     return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : "";

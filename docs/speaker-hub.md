@@ -35,11 +35,16 @@ strings happen to be translated.
    header renders the NeumoMeet wordmark in type — a real lockup, not a
    placeholder, so a missing file costs the page nothing but the artwork.
 
-3. **The video.** Open `/speaker/host` → *Page settings* → paste a YouTube,
-   Vimeo, or direct `.mp4`/`.webm` link. `NEXT_PUBLIC_SPEAKER_VIDEO_URL` sets
-   the starting value for a fresh deployment. Anything that isn't `http(s)` is
-   discarded on save — this string ends up in a `src` on a page your audience
-   loads.
+3. **The video.** Already wired: the session recording ships in this repo at
+   `public/media/neumomeet-90s.mp4` (1920×1080, 91.7s, H.264) and is the
+   default. To change it, open `/speaker/host` → *Ajustes de la página*.
+
+   Accepted there: a YouTube, Vimeo or Google Drive share link, a direct
+   `.mp4`/`.webm` URL, or a root-relative path to another file under
+   `public/`. Anything else — anything that is not `http(s)` or a local path —
+   is discarded on save, because this string ends up in a `src` on a page your
+   audience loads. `NEXT_PUBLIC_SPEAKER_VIDEO_URL` overrides the default for a
+   fresh deployment.
 
    The hub covers the player until the viewer presses **its** play button, and
    starts a 90-second countdown from that click. Set
@@ -49,11 +54,32 @@ strings happen to be translated.
    exactly when someone is deciding whether to keep watching.
 
    The countdown is driven by the video's own `currentTime` for a direct file,
-   so pausing pauses the clock. A YouTube or Vimeo iframe never reports a
-   pause to the page, so those run on wall time from the play click — which is
-   also why the cover exists: pressing play inside a cross-origin iframe is
+   so pausing pauses the clock. A YouTube, Vimeo or Drive iframe never reports
+   a pause to the page, so those run on wall time from the play click — which
+   is also why the cover exists: pressing play inside a cross-origin iframe is
    invisible to us, and the hub's own button is the only moment the countdown
    can honestly start from.
+
+   **This is why the video is self-hosted rather than embedded from Drive.** A
+   same-origin `<video>` is the only arrangement where the countdown follows
+   real playback; the cost is ~20 MB in the repository. If you would rather
+   not carry that, paste the Drive link in the console and delete
+   `public/media/neumomeet-90s.mp4` — everything keeps working, the countdown
+   just stops noticing pauses.
+
+   The shipped file is not `faststart` (its `moov` atom sits after `mdat`), so
+   a browser range-fetches the tail before it can start. It plays fine — range
+   requests are served — but if you re-export it,
+   `ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4` removes that first
+   round trip. Deliberately not done here: this environment has no way to play
+   H.264 back, and rewriting the bytes of a video I cannot then watch is not a
+   change worth making blind.
+
+   **If the video will not play** — a codec the browser lacks, a truncated
+   transfer, a dead link — the page says so and releases the three actions
+   anyway. Without that it is a trap: a stalled player above a countdown that
+   can never advance, since the clock moves on `timeupdate` events a broken
+   video never fires, and nobody reaches the actions the page exists for.
 
 4. **Storage.** See below. The short version: on Vercel, set `KV_REST_API_URL`
    and `KV_REST_API_TOKEN` before you share the public link.
