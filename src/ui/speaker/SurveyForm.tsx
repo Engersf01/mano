@@ -47,13 +47,13 @@ export function SurveyForm({
       });
       const body = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setError(body.error ?? "That didn't go through. Try again.");
+        setError(body.error ?? "No se pudo enviar. Inténtalo otra vez.");
         return;
       }
       setDone(true);
       onSubmitted?.();
     } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
+      setError("No se pudo conectar con el servidor. Revisa tu conexión e inténtalo otra vez.");
     } finally {
       setBusy(false);
     }
@@ -63,9 +63,9 @@ export function SurveyForm({
     return (
       <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6 text-center">
         <Sparkles size={20} className="mx-auto text-cyan-700" />
-        <h3 className="mt-3 font-display text-lg font-semibold text-slate-900">Thank you</h3>
+        <h3 className="mt-3 font-display text-lg font-semibold text-slate-900">Gracias</h3>
         <p className="mt-1 text-sm text-slate-600">
-          Read and taken seriously — especially the blunt parts.
+          Lo leo todo y me lo tomo en serio — sobre todo lo más crudo.
         </p>
       </div>
     );
@@ -74,7 +74,7 @@ export function SurveyForm({
   if (!open) {
     return (
       <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-        The survey is closed. Thanks to everyone who filled it in.
+        La encuesta está cerrada. Gracias a todas las personas que la respondieron.
       </p>
     );
   }
@@ -99,7 +99,7 @@ export function SurveyForm({
             {question.prompt}
             {!question.required && (
               <span className="ml-2 text-[10px] uppercase tracking-[0.18em] text-slate-400">
-                optional
+                opcional
               </span>
             )}
           </p>
@@ -156,10 +156,10 @@ export function SurveyForm({
 
       {!compact && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Your name" hint="Optional — anonymous is fine.">
+          <Field label="Tu nombre" hint="Opcional — anónimo está bien.">
             <TextInput value={name} onChange={(event) => setName(event.target.value)} />
           </Field>
-          <Field label="Email" hint="Optional — only if you'd like a reply.">
+          <Field label="Correo electrónico" hint="Opcional — solo si quieres respuesta.">
             <TextInput
               type="email"
               value={email}
@@ -173,7 +173,7 @@ export function SurveyForm({
 
       <Button type="submit" variant="primary" disabled={busy} className="min-w-[11rem]">
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-        {busy ? "Sending…" : "Send feedback"}
+        {busy ? "Enviando…" : "Enviar comentarios"}
       </Button>
     </form>
   );

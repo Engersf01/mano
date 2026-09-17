@@ -12,9 +12,9 @@ import type { SpeakerSettings } from "./types";
 
 /** The conference weekend. Friday through Sunday, 2026. */
 export const EVENT_DAYS = [
-  { date: "2026-10-02", label: "Friday, October 2", short: "Fri 10/2" },
-  { date: "2026-10-03", label: "Saturday, October 3", short: "Sat 10/3" },
-  { date: "2026-10-04", label: "Sunday, October 4", short: "Sun 10/4" },
+  { date: "2026-10-02", label: "viernes 2 de octubre", short: "vie 2/10" },
+  { date: "2026-10-03", label: "sábado 3 de octubre", short: "sáb 3/10" },
+  { date: "2026-10-04", label: "domingo 4 de octubre", short: "dom 4/10" },
 ] as const;
 
 /**
@@ -61,7 +61,7 @@ const DEFAULT_OPEN_UNTIL = "17:00";
  */
 export const SESSION = {
   date: "2026-10-03",
-  label: "Saturday, October 3",
+  label: "sábado 3 de octubre",
   start: "13:00",
   end: "14:30",
 } as const;
@@ -79,19 +79,21 @@ export const VOLUNTEER_CAPACITY = VOLUNTEERS_SELECTED + VOLUNTEERS_BACKUP;
 export const VOLUNTEER_REQUIREMENTS = [
   {
     id: "tech" as const,
-    label: "I'm confident using technology",
+    label: "Me manejo bien con la tecnología",
     detail:
-      "You can follow live on-screen instructions without someone driving for you.",
+      "Puedes seguir instrucciones en pantalla en directo sin que nadie lo haga por ti.",
   },
   {
     id: "laptop" as const,
-    label: "I'll bring my own laptop on October 3",
-    detail: "Charged, and able to join a Wi-Fi network and open a web browser.",
+    label: "Llevaré mi propia laptop el 3 de octubre",
+    detail: "Cargada, y capaz de conectarse a una red Wi-Fi y abrir un navegador.",
   },
   {
     id: "speaking" as const,
-    label: "I'm comfortable speaking in front of the room",
-    detail: "You'll be mic'd and talking to the audience, not just to me.",
+    // Phrased to avoid a gendered adjective: "cómodo/a" would force every
+    // volunteer to read a form that does not quite address them.
+    label: "No me incomoda hablar delante de la sala",
+    detail: "Llevarás micrófono y hablarás al público, no solo conmigo.",
   },
 ] as const;
 
@@ -99,6 +101,14 @@ export type ScaleQuestion = {
   id: string;
   kind: "scale";
   prompt: string;
+  /**
+   * A word or two for the host console's compact rows.
+   *
+   * The `id` is a storage key and stays English so existing responses keep
+   * parsing; it must never be what the console prints, or an otherwise
+   * Spanish page ends up labelling answers "clarity" and "takeaway".
+   */
+  short: string;
   min: number;
   max: number;
   minLabel: string;
@@ -110,6 +120,8 @@ export type TextQuestion = {
   id: string;
   kind: "text";
   prompt: string;
+  /** See `ScaleQuestion.short`. */
+  short: string;
   placeholder: string;
   required: boolean;
 };
@@ -126,45 +138,50 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
   {
     id: "value",
     kind: "scale",
-    prompt: "How valuable was our conversation?",
+    prompt: "¿Qué tan valiosa fue nuestra conversación?",
+    short: "valor",
     min: 1,
     max: 5,
-    minLabel: "Not really",
-    maxLabel: "Worth the trip",
+    minLabel: "Poco",
+    maxLabel: "Valió el viaje",
     required: true,
   },
   {
     id: "clarity",
     kind: "scale",
-    prompt: "How clearly did I explain things?",
+    prompt: "¿Con qué claridad expliqué las cosas?",
+    short: "claridad",
     min: 1,
     max: 5,
-    minLabel: "Lost me",
-    maxLabel: "Crystal clear",
+    minLabel: "Me perdí",
+    maxLabel: "Clarísimo",
     required: true,
   },
   {
     id: "recommend",
     kind: "scale",
-    prompt: "How likely are you to recommend this session to a colleague?",
+    prompt: "¿Qué probabilidad hay de que recomiendes esta sesión a un colega?",
+    short: "recomienda",
     min: 0,
     max: 10,
-    minLabel: "Not at all",
-    maxLabel: "Already have",
+    minLabel: "Ninguna",
+    maxLabel: "Ya lo hice",
     required: true,
   },
   {
     id: "takeaway",
     kind: "text",
-    prompt: "What's the one thing you'll do differently after today?",
-    placeholder: "The single change you'll actually make…",
+    prompt: "¿Qué es lo único que vas a hacer diferente después de hoy?",
+    short: "su cambio",
+    placeholder: "El cambio que de verdad vas a hacer…",
     required: true,
   },
   {
     id: "improve",
     kind: "text",
-    prompt: "What should I change, cut, or add next time?",
-    placeholder: "Be blunt — this is the useful part.",
+    prompt: "¿Qué debería cambiar, quitar o añadir la próxima vez?",
+    short: "mejoras",
+    placeholder: "Sin filtros — esta es la parte útil.",
     required: false,
   },
 ];
@@ -177,7 +194,7 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
 export const DEFAULT_SETTINGS: SpeakerSettings = {
   videoUrl: process.env.NEXT_PUBLIC_SPEAKER_VIDEO_URL ?? "",
   videoPoster: "",
-  videoTitle: "Start here — then pick your next step",
+  videoTitle: "Empieza aquí — y luego elige tu siguiente paso",
   timeZone: "America/New_York",
   timeZoneLabel: "ET",
   bookingOpen: true,
@@ -252,12 +269,17 @@ export function buildGrid(): GridSlot[] {
   return slots;
 }
 
-/** 24h wall clock to something readable: "13:20" → "1:20 PM". */
+/**
+ * How a time is shown to a person: 24-hour, the same shape as the slot id.
+ *
+ * Spanish-language schedules are written on a 24-hour clock, and it also
+ * removes the am/pm round trip entirely — nothing has to parse "1:20 PM" back
+ * into a number, which is where a booking confirmation can quietly land twelve
+ * hours from the slot it was made for.
+ */
 export function prettyClock(clock: string) {
   const [h, m] = clock.split(":").map(Number);
-  const suffix = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 === 0 ? 12 : h % 12;
-  return `${hour}:${m.toString().padStart(2, "0")} ${suffix}`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
 
 /**

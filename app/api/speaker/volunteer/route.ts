@@ -26,7 +26,7 @@ const bad = (error: string, status = 400) => NextResponse.json({ error }, { stat
 
 export async function POST(request: Request) {
   const body = await jsonBody(request);
-  if (!body) return bad("Expected a JSON body.");
+  if (!body) return bad("Se esperaba un cuerpo JSON.");
 
   const name = text(body.name, LIMITS.name);
   const email = parseEmail(body.email);
@@ -41,8 +41,8 @@ export async function POST(request: Request) {
     speaking: parseBoolean(raw.speaking),
   };
 
-  if (!name) return bad("Please add your name.");
-  if (!email) return bad("Please add an email address.");
+  if (!name) return bad("Añade tu nombre, por favor.");
+  if (!email) return bad("Añade un correo electrónico, por favor.");
 
   /**
    * All three requirements are checked server-side, not just styled as
@@ -53,22 +53,22 @@ export async function POST(request: Request) {
   if (missing.length > 0) {
     return bad(
       missing.length === VOLUNTEER_REQUIREMENTS.length
-        ? "Please confirm all three requirements."
-        : `Still to confirm: ${missing.map((requirement) => `“${requirement.label}”`).join(", ")}.`,
+        ? "Confirma las tres condiciones, por favor."
+        : `Falta confirmar: ${missing.map((requirement) => `“${requirement.label}”`).join(", ")}.`,
     );
   }
 
   const result = await mutate((data) => {
     if (!data.settings.volunteersOpen) {
-      return { ok: false, error: "Volunteer sign-up is closed." } as const;
+      return { ok: false, error: "Las inscripciones de voluntarios están cerradas." } as const;
     }
     if (data.volunteers.some((volunteer) => volunteer.email === email)) {
-      return { ok: false, error: "You're already signed up with that email." } as const;
+      return { ok: false, error: "Ya estás inscrito con ese correo." } as const;
     }
     if (data.volunteers.length >= VOLUNTEER_CAPACITY + WAITLIST_DEPTH) {
       return {
         ok: false,
-        error: "The volunteer list and its waitlist are both full.",
+        error: "La lista de voluntarios y la de espera están llenas.",
       } as const;
     }
 
@@ -103,11 +103,11 @@ export async function POST(request: Request) {
 /** Withdraw. Same code-plus-email rule as a booking cancellation. */
 export async function DELETE(request: Request) {
   const body = await jsonBody(request);
-  if (!body) return bad("Expected a JSON body.");
+  if (!body) return bad("Se esperaba un cuerpo JSON.");
 
   const code = text(body.code, 12).toUpperCase();
   const email = parseEmail(body.email);
-  if (!code || !email) return bad("Enter the email you signed up with and your code.");
+  if (!code || !email) return bad("Introduce el correo con el que te inscribiste y tu código.");
 
   const removed = await mutate((data) => {
     const index = data.volunteers.findIndex(
@@ -118,7 +118,7 @@ export async function DELETE(request: Request) {
     return true;
   });
 
-  if (!removed) return bad("No sign-up matches that email and code.", 404);
+  if (!removed) return bad("Ninguna inscripción coincide con ese correo y ese código.", 404);
   // Everyone behind the withdrawal moves up a place on the next read, because
   // standing is derived from order rather than stored.
   return NextResponse.json({ withdrawn: true });

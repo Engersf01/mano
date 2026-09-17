@@ -21,7 +21,7 @@ const bad = (error: string, status = 400) => NextResponse.json({ error }, { stat
 
 export async function POST(request: Request) {
   const body = await jsonBody(request);
-  if (!body) return bad("Expected a JSON body.");
+  if (!body) return bad("Se esperaba un cuerpo JSON.");
 
   const submitted = (body.answers ?? {}) as Record<string, unknown>;
   const answers: Record<string, number | string> = {};
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     if (question.kind === "scale") {
       const parsed = parseScale(value, question.min, question.max);
       if (parsed === null) {
-        if (question.required) return bad(`Please answer: ${question.prompt}`);
+        if (question.required) return bad(`Falta responder: ${question.prompt}`);
         continue;
       }
       answers[question.id] = parsed;
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     const prose = text(value, LIMITS.answer, { multiline: true });
     if (!prose) {
-      if (question.required) return bad(`Please answer: ${question.prompt}`);
+      if (question.required) return bad(`Falta responder: ${question.prompt}`);
       continue;
     }
     answers[question.id] = prose;
@@ -52,12 +52,12 @@ export async function POST(request: Request) {
 
   const stored = await mutate((data) => {
     if (!data.settings.surveyOpen) {
-      return { ok: false, error: "The survey is closed — thank you though." } as const;
+      return { ok: false, error: "La encuesta está cerrada — gracias de todos modos." } as const;
     }
     if (data.surveys.length >= MAX_RESPONSES) {
       return {
         ok: false,
-        error: "The survey has reached its response limit.",
+        error: "La encuesta ha alcanzado su límite de respuestas.",
       } as const;
     }
 

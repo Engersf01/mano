@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildGrid, eventNow, prettyClock } from "@/speaker/config";
+import { buildGrid, eventNow } from "@/speaker/config";
 import { isSlotOpen } from "@/speaker/derive";
 import { LIMITS, email as parseEmail, jsonBody, text } from "@/server/speakerInput";
 import { mutate, newCode, newId } from "@/server/speakerStore";
@@ -20,7 +20,7 @@ const bad = (error: string, status = 400) => NextResponse.json({ error }, { stat
  */
 export async function POST(request: Request) {
   const body = await jsonBody(request);
-  if (!body) return bad("Expected a JSON body.");
+  if (!body) return bad("Se esperaba un cuerpo JSON.");
 
   const name = text(body.name, LIMITS.name);
   const email = parseEmail(body.email);
@@ -28,25 +28,25 @@ export async function POST(request: Request) {
   const topic = text(body.topic, LIMITS.topic, { multiline: true });
   const slotId = text(body.slotId, 40);
 
-  if (!name) return bad("Please add your name.");
-  if (!email) return bad("Please add an email address I can send the invite to.");
-  if (!slotId) return bad("Please pick a time.");
+  if (!name) return bad("Añade tu nombre, por favor.");
+  if (!email) return bad("Añade un correo al que pueda enviarte la invitación.");
+  if (!slotId) return bad("Elige una hora, por favor.");
 
   const slot = buildGrid().find((entry) => entry.id === slotId);
-  if (!slot || slot.session) return bad("That time isn't one of the 1:1 slots.");
+  if (!slot || slot.session) return bad("Esa hora no es una de las franjas de 1:1.");
 
   const result = await mutate((data) => {
     if (!data.settings.bookingOpen) {
-      return { ok: false, error: "1:1 booking is closed right now." } as const;
+      return { ok: false, error: "Las reservas de 1:1 están cerradas ahora mismo." } as const;
     }
     if (!isSlotOpen(data, slot.id, slot.defaultOpen)) {
       return {
         ok: false,
-        error: "I'm not available at that time — pick another slot.",
+        error: "No estoy disponible a esa hora — elige otra franja.",
       } as const;
     }
     if (slot.id < eventNow(data.settings.timeZone)) {
-      return { ok: false, error: "That time has already passed." } as const;
+      return { ok: false, error: "Esa hora ya pasó." } as const;
     }
     if (data.bookings.some((booking) => booking.slotId === slot.id)) {
       // The race this whole serialised section exists for. Worth its own
@@ -54,14 +54,14 @@ export async function POST(request: Request) {
       // second ago.
       return {
         ok: false,
-        error: "Someone just took that slot. Pick another one.",
+        error: "Alguien acaba de ocupar esa franja. Elige otra.",
       } as const;
     }
     if (data.bookings.some((booking) => booking.email === email)) {
       return {
         ok: false,
         error:
-          "That email already holds a slot. Cancel it with your confirmation code first, then rebook.",
+          "Ese correo ya tiene una franja reservada. Cancélala con tu código de confirmación y vuelve a reservar.",
       } as const;
     }
 
@@ -81,12 +81,15 @@ export async function POST(request: Request) {
 
   if (!result.ok) return bad(result.error, 409);
 
+  // Raw `HH:MM`, not a formatted string. The client owns presentation, and a
+  // display string sent over the wire is a string something has to parse back
+  // — which is exactly how a calendar invite ends up twelve hours out.
   return NextResponse.json({
     code: result.booking.code,
     slotId: slot.id,
     date: slot.date,
-    start: prettyClock(slot.start),
-    end: prettyClock(slot.end),
+    start: slot.start,
+    end: slot.end,
   });
 }
 
@@ -99,11 +102,13 @@ export async function POST(request: Request) {
  */
 export async function DELETE(request: Request) {
   const body = await jsonBody(request);
-  if (!body) return bad("Expected a JSON body.");
+  if (!body) return bad("Se esperaba un cuerpo JSON.");
 
   const code = text(body.code, 12).toUpperCase();
   const email = parseEmail(body.email);
-  if (!code || !email) return bad("Enter the email you booked with and your confirmation code.");
+  if (!code || !email) {
+    return bad("Introduce el correo con el que reservaste y tu código de confirmación.");
+  }
 
   const removed = await mutate((data) => {
     const index = data.bookings.findIndex(
@@ -115,7 +120,7 @@ export async function DELETE(request: Request) {
   });
 
   if (!removed) {
-    return bad("No booking matches that email and code.", 404);
+    return bad("Ninguna reserva coincide con ese correo y ese código.", 404);
   }
   return NextResponse.json({ cancelled: true });
 }

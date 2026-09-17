@@ -28,16 +28,16 @@ export default async function SurveyPage() {
             href="/speaker"
             className="text-xs text-slate-500 transition hover:text-slate-900"
           >
-            Speaker hub
+            Página principal
           </Link>
         </header>
 
         <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-          How did our conversation go?
+          ¿Cómo fue nuestra conversación?
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-600">
-          Five questions, about a minute. Honest beats kind — the two written answers
-          are the ones that change the next talk.
+          Cinco preguntas, alrededor de un minuto. Mejor sincero que amable: las dos
+          respuestas escritas son las que cambian la próxima charla.
         </p>
 
         <div className="mt-8">

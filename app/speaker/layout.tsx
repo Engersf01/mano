@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "NeumoMeet · Watch, book, volunteer",
+  title: "NeumoMeet · Mira, reserva, participa",
   description:
-    "Watch the session recap, book a 15–20 minute 1:1 across the October 2–4 weekend, volunteer for the October 3 session, or leave feedback.",
+    "Mira el resumen de la sesión, reserva un 1:1 de 15–20 minutos durante el fin de semana del 2 al 4 de octubre, apúntate como voluntario para la sesión del 3 de octubre, o deja tus comentarios.",
 };
 
 /**
@@ -47,7 +47,17 @@ export default function SpeakerLayout({ children }: { children: ReactNode }) {
         html, body { overflow: auto; height: auto; }
         body { background: #ffffff; color: #0f172a; color-scheme: light; }
       `}</style>
-      {children}
+      {/*
+        `lang` on a wrapper rather than on <html>, which only the root layout
+        renders — and the rest of the app is in English, so flipping it there
+        would mislabel the kiosk instead.
+
+        It is not decoration: it picks the voice a screen reader uses, and an
+        English synthesiser reading "¿Qué tan valiosa fue nuestra
+        conversación?" is unintelligible. It also drives hyphenation and the
+        spell-checker inside every textarea on these pages.
+      */}
+      <div lang="es">{children}</div>
     </>
   );
 }

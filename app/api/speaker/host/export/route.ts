@@ -2,6 +2,7 @@ import { SURVEY_QUESTIONS } from "@/speaker/config";
 import { orderedVolunteers, standingAt } from "@/speaker/derive";
 import { authorizeHost } from "@/server/speakerAuth";
 import { readData } from "@/server/speakerStore";
+import type { VolunteerStanding } from "@/speaker/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,13 @@ function csv(rows: unknown[][]) {
 
 const stamp = (ms: number) => new Date(ms).toISOString();
 
+/** The stored standings are English identifiers; the spreadsheet is not. */
+const STANDING_ES: Record<VolunteerStanding, string> = {
+  selected: "en el escenario",
+  backup: "suplente",
+  waitlist: "lista de espera",
+};
+
 export async function GET(request: Request) {
   const auth = authorizeHost(request);
   if (!auth.ok) {
@@ -44,7 +52,7 @@ export async function GET(request: Request) {
 
   if (kind === "bookings") {
     rows = [
-      ["Slot", "Date", "Start", "Name", "Email", "Organization", "What they want to cover", "Code", "Booked at"],
+      ["Franja", "Fecha", "Hora", "Nombre", "Correo", "Empresa", "Qué quiere tratar", "Código", "Reservado el"],
       ...[...data.bookings]
         .sort((a, b) => a.slotId.localeCompare(b.slotId))
         .map((booking) => {
@@ -64,17 +72,17 @@ export async function GET(request: Request) {
     ];
   } else if (kind === "volunteers") {
     rows = [
-      ["Position", "Standing", "Name", "Email", "Phone", "Organization", "Confident with tech", "Brings laptop", "Comfortable speaking", "Note", "Code", "Signed up at"],
+      ["Puesto", "Situación", "Nombre", "Correo", "Teléfono", "Empresa", "Maneja tecnología", "Lleva laptop", "Habla en público", "Nota", "Código", "Inscrito el"],
       ...orderedVolunteers(data).map((volunteer, index) => [
         index + 1,
-        standingAt(index),
+        STANDING_ES[standingAt(index)],
         volunteer.name,
         volunteer.email,
         volunteer.phone,
         volunteer.organization,
-        volunteer.confirmations.tech ? "yes" : "no",
-        volunteer.confirmations.laptop ? "yes" : "no",
-        volunteer.confirmations.speaking ? "yes" : "no",
+        volunteer.confirmations.tech ? "sí" : "no",
+        volunteer.confirmations.laptop ? "sí" : "no",
+        volunteer.confirmations.speaking ? "sí" : "no",
         volunteer.note,
         volunteer.code,
         stamp(volunteer.createdAt),
@@ -82,7 +90,7 @@ export async function GET(request: Request) {
     ];
   } else if (kind === "survey") {
     rows = [
-      ["Submitted at", "Name", "Email", ...SURVEY_QUESTIONS.map((question) => question.prompt)],
+      ["Enviado el", "Nombre", "Correo", ...SURVEY_QUESTIONS.map((question) => question.prompt)],
       ...[...data.surveys]
         .sort((a, b) => a.createdAt - b.createdAt)
         .map((response) => [
@@ -93,7 +101,7 @@ export async function GET(request: Request) {
         ]),
     ];
   } else {
-    return new Response(JSON.stringify({ error: `Unknown export "${kind}".` }), {
+    return new Response(JSON.stringify({ error: `Exportación desconocida: "${kind}".` }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });

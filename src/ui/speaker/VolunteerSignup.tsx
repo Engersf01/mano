@@ -20,21 +20,26 @@ import { cn } from "@/lib/utils";
 
 const ICONS = { tech: Wand2, laptop: Laptop, speaking: Mic } as const;
 
+/**
+ * Wording chosen to stay clear of gendered adjectives — "preparado/a" in a
+ * confirmation message makes half the volunteers read a sentence that does not
+ * quite address them.
+ */
 const STANDING_COPY: Record<VolunteerStanding, { badge: string; tone: string; line: string }> = {
   selected: {
-    badge: "On stage",
+    badge: "En el escenario",
     tone: "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-200",
-    line: "You're one of the four coming up during the session.",
+    line: "Estás entre las cuatro personas que suben durante la sesión.",
   },
   backup: {
-    badge: "Backup",
+    badge: "Suplente",
     tone: "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
-    line: "You're the backup — come ready, and you're on if anyone drops.",
+    line: "Quedas como suplente: ven por si alguien no puede.",
   },
   waitlist: {
-    badge: "Waitlist",
+    badge: "Lista de espera",
     tone: "bg-slate-100 text-slate-600 ring-1 ring-slate-200",
-    line: "You're on the waitlist. I'll email you if a spot opens up.",
+    line: "Estás en la lista de espera. Te escribo si se libera un puesto.",
   },
 };
 
@@ -80,14 +85,14 @@ export function VolunteerSignup({
         | { code: string; standing: VolunteerStanding; position: number }
         | { error: string };
       if (!response.ok || "error" in body) {
-        setError("error" in body ? body.error : "That didn't go through. Try again.");
+        setError("error" in body ? body.error : "No se pudo completar. Inténtalo otra vez.");
         onChanged();
         return;
       }
       setResult(body);
       onChanged();
     } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
+      setError("No se pudo conectar con el servidor. Revisa tu conexión e inténtalo otra vez.");
     } finally {
       setBusy(false);
     }
@@ -104,8 +109,8 @@ export function VolunteerSignup({
           {state.settings.timeZoneLabel}
         </p>
         <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
-          <Users size={12} /> {VOLUNTEER_LIMITS.selected} on stage +{" "}
-          {VOLUNTEER_LIMITS.backup} backup
+          <Users size={12} /> {VOLUNTEER_LIMITS.selected} en el escenario +{" "}
+          {VOLUNTEER_LIMITS.backup} suplente
         </p>
       </div>
 
@@ -132,10 +137,10 @@ export function VolunteerSignup({
                   taken ? "text-slate-900" : "text-slate-400",
                 )}
               >
-                {taken ? taken.firstName : "Open"}
+                {taken ? taken.firstName : "Libre"}
               </p>
               <p className="mt-0.5 text-[10px] uppercase tracking-[0.16em] text-slate-500">
-                {standing === "selected" ? `Spot ${index + 1}` : "Backup"}
+                {standing === "selected" ? `Puesto ${index + 1}` : "Suplente"}
               </p>
             </div>
           );
@@ -153,21 +158,21 @@ export function VolunteerSignup({
             <Check size={12} /> {STANDING_COPY[result.standing].badge}
           </span>
           <h3 className="mt-3 font-display text-lg font-semibold text-slate-900">
-            You&apos;re signed up, #{result.position}
+            Ya estás en la lista, n.º {result.position}
           </h3>
           <p className="mt-1 text-sm text-slate-700">{STANDING_COPY[result.standing].line}</p>
           <p className="mt-4 text-xs leading-relaxed text-slate-600">
-            Your code is{" "}
+            Tu código es{" "}
             <code className="rounded-md bg-white px-2 py-1 font-mono text-sm font-semibold tracking-[0.2em] text-cyan-800 ring-1 ring-cyan-200">
               {result.code}
             </code>
-            . Keep it in case you need to withdraw — please do that rather than just not
-            turning up, so the backup knows they&apos;re on.
+            . Guárdalo por si necesitas darte de baja: hazlo en lugar de simplemente no
+            aparecer, para que la persona suplente sepa que entra.
           </p>
         </div>
       ) : !state.settings.volunteersOpen ? (
         <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-          Volunteer sign-up is closed — the roster above is final.
+          Las inscripciones están cerradas — la lista de arriba es definitiva.
         </p>
       ) : (
         <form
@@ -179,7 +184,7 @@ export function VolunteerSignup({
         >
           <fieldset className="space-y-2">
             <legend className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-              All three are required
+              Las tres son obligatorias
             </legend>
             {VOLUNTEER_REQUIREMENTS.map((requirement) => {
               const Icon = ICONS[requirement.id];
@@ -220,7 +225,7 @@ export function VolunteerSignup({
           </fieldset>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Your name">
+            <Field label="Tu nombre">
               <TextInput
                 required
                 autoComplete="name"
@@ -228,7 +233,7 @@ export function VolunteerSignup({
                 onChange={(event) => setName(event.target.value)}
               />
             </Field>
-            <Field label="Email">
+            <Field label="Correo electrónico">
               <TextInput
                 required
                 type="email"
@@ -237,7 +242,7 @@ export function VolunteerSignup({
                 onChange={(event) => setEmail(event.target.value)}
               />
             </Field>
-            <Field label="Mobile" hint="Optional — only for day-of changes.">
+            <Field label="Móvil" hint="Opcional — solo para cambios de última hora.">
               <TextInput
                 type="tel"
                 autoComplete="tel"
@@ -245,7 +250,7 @@ export function VolunteerSignup({
                 onChange={(event) => setPhone(event.target.value)}
               />
             </Field>
-            <Field label="Company or team" hint="Optional.">
+            <Field label="Empresa o equipo" hint="Opcional.">
               <TextInput
                 autoComplete="organization"
                 value={organization}
@@ -255,8 +260,8 @@ export function VolunteerSignup({
           </div>
 
           <Field
-            label="Anything I should know?"
-            hint="Optional — accessibility needs, what you're hoping to try, anything at all."
+            label="¿Algo que deba saber?"
+            hint="Opcional — necesidades de accesibilidad, qué te gustaría probar, lo que sea."
           >
             <TextArea
               rows={2}
@@ -275,17 +280,17 @@ export function VolunteerSignup({
               className="min-w-[11rem]"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              {busy ? "Signing up…" : "Count me in"}
+              {busy ? "Apuntando…" : "Apúntame"}
             </Button>
             <p className="text-xs text-slate-500">
               {spotsLeft > 0
-                ? `${spotsLeft} of ${VOLUNTEER_LIMITS.capacity} spots left.`
-                : "All spots are taken — you'll join the waitlist."}
+                ? `Quedan ${spotsLeft} de ${VOLUNTEER_LIMITS.capacity} puestos.`
+                : "Todos los puestos están ocupados — entrarás en la lista de espera."}
             </p>
           </div>
           {!allConfirmed && (
             <p className="text-xs text-slate-500">
-              Tick all three requirements above to sign up.
+              Marca las tres condiciones de arriba para apuntarte.
             </p>
           )}
         </form>
@@ -293,8 +298,8 @@ export function VolunteerSignup({
 
       <WithdrawForm onChanged={onChanged} />
       <p className="text-[11px] leading-relaxed text-slate-500">
-        Volunteers meet me at the front five minutes before {prettyClock(SESSION.start)} on{" "}
-        {SESSION.label}.
+        Los voluntarios me encuentran al frente cinco minutos antes de las{" "}
+        {prettyClock(SESSION.start)} del {SESSION.label}.
       </p>
     </div>
   );
@@ -311,7 +316,8 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
   if (done) {
     return (
       <p className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
-        Withdrawn — thanks for telling me. The next person on the list moves up.
+        Baja registrada — gracias por avisar. La siguiente persona de la lista sube un
+        puesto.
       </p>
     );
   }
@@ -323,7 +329,7 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
         onClick={() => setOpen(true)}
         className="text-xs text-slate-500 underline decoration-dotted underline-offset-4 transition hover:text-slate-900"
       >
-        Signed up and can no longer make it?
+        ¿Te apuntaste y ya no puedes venir?
       </button>
     );
   }
@@ -339,13 +345,13 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
       });
       const body = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setError(body.error ?? "That didn't work.");
+        setError(body.error ?? "No funcionó.");
         return;
       }
       setDone(true);
       onChanged();
     } catch {
-      setError("Couldn't reach the server. Try again.");
+      setError("No se pudo conectar con el servidor. Inténtalo otra vez.");
     } finally {
       setBusy(false);
     }
@@ -360,7 +366,7 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
       className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Email">
+        <Field label="Correo electrónico">
           <TextInput
             required
             type="email"
@@ -368,7 +374,7 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
             onChange={(event) => setEmail(event.target.value)}
           />
         </Field>
-        <Field label="Your code">
+        <Field label="Tu código">
           <TextInput
             required
             value={code}
@@ -380,10 +386,10 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
       {error && <ErrorNote>{error}</ErrorNote>}
       <div className="flex gap-2">
         <Button type="submit" variant="danger" disabled={busy}>
-          {busy ? <Loader2 size={14} className="animate-spin" /> : null} Withdraw
+          {busy ? <Loader2 size={14} className="animate-spin" /> : null} Darme de baja
         </Button>
         <Button onClick={() => setOpen(false)} disabled={busy}>
-          Never mind
+          Mejor no
         </Button>
       </div>
     </form>

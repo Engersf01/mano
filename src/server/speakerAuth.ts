@@ -44,12 +44,12 @@ export function authorizeHost(request: Request): { ok: true } | AuthFailure {
       ok: false,
       status: 503,
       error:
-        "No host passcode is configured. Set SPEAKER_HOST_PASSCODE in the deployment's environment.",
+        "No hay ningún código de acceso configurado. Define SPEAKER_HOST_PASSCODE en el entorno del despliegue.",
     };
   }
   const provided = request.headers.get(PASSCODE_HEADER) ?? "";
   if (!provided || !matches(provided, expected)) {
-    return { ok: false, status: 401, error: "That passcode doesn't open the console." };
+    return { ok: false, status: 401, error: "Ese código no abre la consola." };
   }
   return { ok: true };
 }

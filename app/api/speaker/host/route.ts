@@ -80,6 +80,7 @@ export async function GET(request: Request) {
     return {
       id: question.id,
       prompt: question.prompt,
+      short: question.short,
       min: question.min,
       max: question.max,
       count: values.length,
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
   if (!auth.ok) return bad(auth.error, auth.status);
 
   const body = await jsonBody(request);
-  if (!body) return bad("Expected a JSON body.");
+  if (!body) return bad("Se esperaba un cuerpo JSON.");
   const action = text(body.action, 40);
 
   if (action === "availability") {
@@ -157,7 +158,7 @@ export async function POST(request: Request) {
 
   if (action === "delete-booking" || action === "delete-volunteer") {
     const id = text(body.id, 64);
-    if (!id) return bad("Which row?");
+    if (!id) return bad("¿Qué fila?");
     const removed = await mutate((data) => {
       const list = action === "delete-booking" ? data.bookings : data.volunteers;
       const index = list.findIndex((row) => row.id === id);
@@ -165,9 +166,9 @@ export async function POST(request: Request) {
       list.splice(index, 1);
       return true;
     });
-    if (!removed) return bad("That row is already gone.", 404);
+    if (!removed) return bad("Esa fila ya no existe.", 404);
     return NextResponse.json({ deleted: true });
   }
 
-  return bad(`Unknown action "${text(body.action, LIMITS.name)}".`);
+  return bad(`Acción desconocida: "${text(body.action, LIMITS.name)}".`);
 }

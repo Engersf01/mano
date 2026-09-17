@@ -201,8 +201,8 @@ export function VideoStage({
           <span aria-hidden>{mmss(showCountdown ? remaining : VIDEO_COUNTDOWN_SECONDS)}</span>
           <span className="sr-only">
             {showCountdown
-              ? `${Math.ceil(remaining)} second${Math.ceil(remaining) === 1 ? "" : "s"} of video remaining`
-              : `${VIDEO_COUNTDOWN_SECONDS} second video`}
+              ? `Quedan ${Math.ceil(remaining)} segundo${Math.ceil(remaining) === 1 ? "" : "s"} de video`
+              : `Video de ${VIDEO_COUNTDOWN_SECONDS} segundos`}
           </span>
         </span>
 
@@ -218,10 +218,10 @@ export function VideoStage({
 
         <span className="hidden shrink-0 text-[11px] font-medium text-slate-500 sm:inline">
           {!started
-            ? "Press play to start"
+            ? "Pulsa reproducir para empezar"
             : remaining <= 0
-              ? "Done — pick an action below"
-              : "Playing"}
+              ? "Listo — elige una acción abajo"
+              : "Reproduciendo"}
         </span>
       </div>
 
@@ -259,14 +259,14 @@ export function VideoStage({
           <button
             type="button"
             onClick={start}
-            aria-label={`Play the ${VIDEO_COUNTDOWN_SECONDS}-second video`}
+            aria-label={`Reproducir el video de ${VIDEO_COUNTDOWN_SECONDS} segundos`}
             className="group absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/55 backdrop-blur-[2px] transition hover:bg-slate-900/45"
           >
             <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-xl transition group-hover:scale-105">
               <Play size={24} className="ml-1 fill-cyan-700 text-cyan-700" />
             </span>
             <span className="px-6 text-center text-sm font-medium text-white">
-              Play — {VIDEO_COUNTDOWN_SECONDS} seconds
+              Reproducir — {VIDEO_COUNTDOWN_SECONDS} segundos
             </span>
           </button>
         )}
@@ -274,10 +274,12 @@ export function VideoStage({
         {video.kind === "none" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-100 px-6 text-center">
             <Film size={28} className="text-slate-400" />
-            <p className="text-sm font-medium text-slate-700">The video isn&apos;t set yet</p>
+            <p className="text-sm font-medium text-slate-700">
+              El video aún no está configurado
+            </p>
             <p className="max-w-sm text-xs leading-relaxed text-slate-500">
-              Paste a YouTube, Vimeo or direct video link in the host console and it
-              appears here — everything below already works without it.
+              Pega un enlace de YouTube, Vimeo o de un video directo en la consola del
+              anfitrión y aparecerá aquí — todo lo de abajo ya funciona sin él.
             </p>
           </div>
         )}
@@ -290,8 +292,8 @@ export function VideoStage({
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
             {watched
-              ? "Thanks for watching — pick an action below."
-              : `${VIDEO_COUNTDOWN_SECONDS} seconds, then choose one of the three actions below.`}
+              ? "Gracias por verlo — elige una acción abajo."
+              : `${VIDEO_COUNTDOWN_SECONDS} segundos, y luego elige una de las tres acciones de abajo.`}
           </p>
         </div>
 
@@ -304,7 +306,7 @@ export function VideoStage({
           )}
         >
           {watched ? <CheckCircle2 size={12} /> : <Timer size={12} />}
-          {watched ? "Watched" : "Not watched"}
+          {watched ? "Visto" : "Sin ver"}
         </span>
       </div>
     </div>

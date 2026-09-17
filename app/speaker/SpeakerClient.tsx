@@ -28,9 +28,9 @@ import { VolunteerSignup } from "@/ui/speaker/VolunteerSignup";
 const POLL_MS = 45_000;
 
 const SECTIONS = [
-  { id: "book", label: "Book a 1:1", Icon: CalendarClock },
-  { id: "volunteer", label: "Volunteer", Icon: Users },
-  { id: "feedback", label: "Feedback", Icon: MessageSquareQuote },
+  { id: "book", label: "Reservar un 1:1", Icon: CalendarClock },
+  { id: "volunteer", label: "Ser voluntario", Icon: Users },
+  { id: "feedback", label: "Comentarios", Icon: MessageSquareQuote },
 ];
 
 export default function SpeakerClient({ initial }: { initial: PublicState }) {
@@ -87,18 +87,18 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
       <div className="mx-auto max-w-4xl px-5">
         <section className="pt-10 sm:pt-14">
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-700">
-            October 2–4 · {state.settings.timeZoneLabel}
+            2–4 de octubre · {state.settings.timeZoneLabel}
           </p>
           <h1 className="mt-3 font-display text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-            Watch this,{" "}
+            Mira el video,{" "}
             <span className="bg-gradient-to-r from-cyan-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
-              then take one action.
+              y luego elige una acción.
             </span>
           </h1>
           <p className="mt-4 max-w-2xl text-balance text-base leading-relaxed text-slate-600">
-            Ninety seconds of video, then pick whichever one applies to you: grab 15–20
-            minutes with me over the weekend, come up on stage during the Saturday
-            session, or tell me how our conversation went.
+            Noventa segundos de video y luego elige la opción que te corresponda:
+            reserva 15–20 minutos conmigo durante el fin de semana, súbete al escenario
+            durante la sesión del sábado, o cuéntame cómo fue nuestra conversación.
           </p>
 
           <div className="mt-8">
@@ -132,45 +132,47 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
 
         <Section
           id="book"
-          eyebrow="Option one"
-          title="Book a 1:1"
-          blurb={`Fifteen to twenty minutes, one-on-one, any time I'm free across October 2–4. Pick a slot and it's yours — all times are ${state.settings.timeZoneLabel}.`}
+          eyebrow="Opción uno"
+          title="Reserva un 1:1"
+          blurb={`De quince a veinte minutos, uno a uno, a cualquier hora que tenga libre del 2 al 4 de octubre. Elige una franja y es tuya — todas las horas son ${state.settings.timeZoneLabel}.`}
         >
           <SlotPicker state={state} onChanged={refresh} />
         </Section>
 
         <Section
           id="volunteer"
-          eyebrow="Option two"
-          title="Volunteer for the October 3 session"
-          blurb="Four of you come up during my session, with a fifth signed up as cover. It needs people who are comfortable with tech, have a laptop, and don't mind a microphone."
+          eyebrow="Opción dos"
+          title="Sé voluntario en la sesión del 3 de octubre"
+          blurb="Cuatro de ustedes suben conmigo durante la sesión, con una quinta persona como suplente. Hace falta gente que se maneje bien con la tecnología, lleve su laptop y a la que no le importe un micrófono."
         >
           <VolunteerSignup state={state} onChanged={refresh} />
         </Section>
 
         <Section
           id="feedback"
-          eyebrow="Option three"
-          title="Tell me how it went"
-          blurb="Five questions, about a minute. Best filled in right after we talk on October 3, while it's still fresh."
+          eyebrow="Opción tres"
+          title="Cuéntame cómo fue"
+          blurb="Cinco preguntas, alrededor de un minuto. Mejor justo después de que hablemos el 3 de octubre, cuando todavía esté fresco."
         >
           <SurveyForm open={state.settings.surveyOpen} onSubmitted={refresh} />
           <p className="mt-4 text-[11px] text-slate-500">
-            Sharing this with a group? Send them{" "}
+            ¿Lo compartes con un grupo? Mándales{" "}
             <Link
               href="/speaker/survey"
               className="text-slate-600 underline decoration-dotted underline-offset-4 hover:text-slate-900"
             >
               /speaker/survey
             </Link>{" "}
-            — same five questions, nothing else on the page.
+            — las mismas cinco preguntas, y nada más en la página.
           </p>
         </Section>
 
         <footer className="mt-20 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-6 text-[11px] text-slate-500">
-          <span>October 2–4, 2026 · all times {state.settings.timeZoneLabel}</span>
+          <span>
+            2–4 de octubre de 2026 · todas las horas en {state.settings.timeZoneLabel}
+          </span>
           <Link href="/speaker/host" className="transition hover:text-slate-800">
-            Host console
+            Consola del anfitrión
           </Link>
         </footer>
       </div>

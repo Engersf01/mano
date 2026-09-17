@@ -3,6 +3,11 @@
 A public page for the **October 2–4, 2026** conference weekend: one video, and
 three things an audience can do after watching it.
 
+**The audience-facing pages and the host console are in Spanish.** Code,
+comments and this document stay in English — the rest of the repository is
+English, and a codebase in two languages is harder to work in than a UI whose
+strings happen to be translated.
+
 | Route | Who it's for | What it does |
 |---|---|---|
 | `/speaker` | the audience | Video, then book a 1:1, volunteer, or leave feedback |
@@ -54,9 +59,9 @@ three things an audience can do after watching it.
    and `KV_REST_API_TOKEN` before you share the public link.
 
 5. **Timezone.** Defaults to `America/New_York`, shown as "ET". Change both the
-   IANA name and its short label in *Page settings* — every time on the page is
-   expressed in that one zone, and the label is printed beside them so nobody
-   has to guess.
+   IANA name and its short label in *Ajustes de la página* — every time on the
+   page is expressed in that one zone, and the label is printed beside them so
+   nobody has to guess.
 
 ## Where the data lives
 
@@ -179,3 +184,36 @@ knowing before editing:
   out at a conference. The project's `ink` and `aurora` scales belong to the
   stage — on white they read as pastels, so the hub uses Tailwind's default
   `slate` / `cyan` / `violet` ramps.
+
+## Language
+
+Spanish, throughout both the audience pages and the host console.
+
+- **Where the strings live.** In place, next to the markup and the handlers
+  that use them, rather than in a message catalogue. There is one language, so
+  a catalogue would add indirection without buying anything; if English is ever
+  needed alongside Spanish, that is the point to introduce one.
+- **`lang="es"`** is set on a wrapper inside `app/speaker/layout.tsx`, not on
+  `<html>` — only the root layout renders that element, and the rest of the app
+  is English, so setting it there would mislabel the kiosk. It is not
+  decoration: it picks the voice a screen reader uses, and drives hyphenation
+  and the spell-checker inside every textarea on these pages.
+- **Times are 24-hour** (`13:20`), which is how Spanish-language schedules are
+  written. It also removed the am/pm round trip: the booking endpoint returns
+  raw `HH:MM` and the client formats it, so nothing parses a display string
+  back into a number — the step that could have placed a calendar invite twelve
+  hours from the slot it was made for.
+- **Day and month names are lowercase** (`viernes 2 de octubre`), per Spanish
+  convention, in `EVENT_DAYS` and `SESSION`.
+- **Requirement and confirmation wording avoids gendered adjectives.**
+  "Preparado/a" in a confirmation makes half the volunteers read a sentence
+  that does not quite address them, so the copy is phrased around it — e.g.
+  "No me incomoda hablar delante de la sala" rather than "Me siento cómodo".
+- **Question ids stay English** (`value`, `clarity`, `takeaway`) because they
+  are storage keys and existing responses are filed under them. Each question
+  carries a `short` label for the console's compact rows, so the id is never
+  what a person reads.
+- **Standings stay English in storage** (`selected` / `backup` / `waitlist`)
+  and are mapped to Spanish where they are displayed and exported.
+- **CSV headers and the yes/no cells are Spanish**, since the export is opened
+  in the host's own spreadsheet.

@@ -72,6 +72,7 @@ type HostPayload = {
   scales: {
     id: string;
     prompt: string;
+    short: string;
     min: number;
     max: number;
     count: number;
@@ -110,7 +111,7 @@ export default function HostClient() {
         });
         const body = (await response.json()) as HostPayload | { error: string };
         if (!response.ok || "error" in body) {
-          setError("error" in body ? body.error : "Couldn't load the console.");
+          setError("error" in body ? body.error : "No se pudo cargar la consola.");
           // Forget a passcode the server rejected; keep it when the failure was
           // the server's own setup, so a fixed env var doesn't need a retype.
           if (response.status === 401) {
@@ -126,7 +127,7 @@ export default function HostClient() {
         setData(body);
         setPending({});
       } catch {
-        setError("Couldn't reach the server.");
+        setError("No se pudo conectar con el servidor.");
       } finally {
         setBusy(false);
       }
@@ -151,13 +152,13 @@ export default function HostClient() {
         });
         const result = (await response.json()) as { error?: string };
         if (!response.ok) {
-          setError(result.error ?? "That didn't save.");
+          setError(result.error ?? "No se guardó.");
           return false;
         }
         await load(passcode);
         return true;
       } catch {
-        setError("Couldn't reach the server.");
+        setError("No se pudo conectar con el servidor.");
         return false;
       } finally {
         setBusy(false);
@@ -181,7 +182,7 @@ export default function HostClient() {
           cache: "no-store",
         });
         if (!response.ok) {
-          setError("Export failed.");
+          setError("La exportación falló.");
           return;
         }
         const blob = await response.blob();
@@ -192,7 +193,7 @@ export default function HostClient() {
         anchor.click();
         URL.revokeObjectURL(url);
       } catch {
-        setError("Export failed.");
+        setError("La exportación falló.");
       }
     },
     [passcode],
@@ -226,7 +227,7 @@ export default function HostClient() {
           <div className="flex items-center gap-4">
             <BrandMark />
             <span className="hidden text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400 sm:inline">
-              Host console
+              Consola del anfitrión
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -236,13 +237,13 @@ export default function HostClient() {
               ) : (
                 <RefreshCw size={14} />
               )}
-              Refresh
+              Actualizar
             </Button>
             <Link
               href="/speaker"
               className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
             >
-              View public page
+              Ver la página pública
             </Link>
           </div>
         </div>
@@ -255,19 +256,19 @@ export default function HostClient() {
           <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
             <TriangleAlert size={16} className="mt-0.5 shrink-0" />
             <p>
-              <strong>Bookings will be lost.</strong> This deployment is serverless and
-              no KV store is configured, so the JSON file backing this console lives on
-              a scratch disk that is thrown away between requests. Set{" "}
-              <code className="font-mono">KV_REST_API_URL</code> and{" "}
-              <code className="font-mono">KV_REST_API_TOKEN</code> before sharing the
-              public link.
+              <strong>Se perderán las reservas.</strong> Este despliegue es serverless y
+              no hay ningún almacén KV configurado, así que el archivo JSON que respalda
+              esta consola vive en un disco temporal que se descarta entre peticiones.
+              Configura <code className="font-mono">KV_REST_API_URL</code> y{" "}
+              <code className="font-mono">KV_REST_API_TOKEN</code> antes de compartir el
+              enlace público.
             </p>
           </div>
         )}
 
         {!data ? (
           <p className="py-16 text-center text-sm text-slate-500">
-            {busy ? "Loading…" : "Nothing loaded."}
+            {busy ? "Cargando…" : "No se cargó nada."}
           </p>
         ) : (
           <>
@@ -342,9 +343,14 @@ function PasscodeGate({
       >
         <div className="flex items-center gap-2 text-cyan-700">
           <LockKeyhole size={16} />
-          <h1 className="font-display text-lg font-semibold text-slate-900">Host console</h1>
+          <h1 className="font-display text-lg font-semibold text-slate-900">
+            Consola del anfitrión
+          </h1>
         </div>
-        <Field label="Passcode" hint="Set as SPEAKER_HOST_PASSCODE in the environment.">
+        <Field
+          label="Código de acceso"
+          hint="Se define como SPEAKER_HOST_PASSCODE en el entorno."
+        >
           <TextInput
             autoFocus
             type="password"
@@ -354,7 +360,7 @@ function PasscodeGate({
         </Field>
         {error && <ErrorNote>{error}</ErrorNote>}
         <Button type="submit" variant="primary" className="w-full">
-          Open console
+          Abrir consola
         </Button>
       </form>
     </main>
@@ -379,22 +385,22 @@ function SettingsPanel({
 
   return (
     <Panel
-      title="Page settings"
-      subtitle="The video, the timezone every time on the page is expressed in, and which sections accept new entries."
+      title="Ajustes de la página"
+      subtitle="El video, la zona horaria en la que se expresan todas las horas de la página, y qué secciones aceptan entradas nuevas."
       actions={
         <Button
           variant={dirty ? "primary" : "ghost"}
           disabled={!dirty || busy}
           onClick={() => void onSave(draft)}
         >
-          <Save size={14} /> Save
+          <Save size={14} /> Guardar
         </Button>
       }
     >
       <div className="space-y-3">
         <Field
-          label="Video link"
-          hint="YouTube, Vimeo, or a direct .mp4/.webm URL. Anything that isn't http(s) is discarded."
+          label="Enlace del video"
+          hint="YouTube, Vimeo, o una URL directa .mp4/.webm. Todo lo que no sea http(s) se descarta."
         >
           <TextInput
             value={draft.videoUrl}
@@ -403,13 +409,16 @@ function SettingsPanel({
           />
         </Field>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Heading under the video">
+          <Field label="Título bajo el video">
             <TextInput
               value={draft.videoTitle}
               onChange={(event) => setDraft({ ...draft, videoTitle: event.target.value })}
             />
           </Field>
-          <Field label="Poster image" hint="Optional, and only used for a direct file.">
+          <Field
+            label="Imagen de portada"
+            hint="Opcional, y solo se usa con un archivo directo."
+          >
             <TextInput
               value={draft.videoPoster}
               onChange={(event) => setDraft({ ...draft, videoPoster: event.target.value })}
@@ -417,15 +426,15 @@ function SettingsPanel({
             />
           </Field>
           <Field
-            label="Timezone"
-            hint="An IANA name, e.g. America/New_York or Europe/Lisbon."
+            label="Zona horaria"
+            hint="Un nombre IANA, p. ej. America/New_York o Europe/Madrid."
           >
             <TextInput
               value={draft.timeZone}
               onChange={(event) => setDraft({ ...draft, timeZone: event.target.value })}
             />
           </Field>
-          <Field label="Shown as" hint="The short label printed beside every time.">
+          <Field label="Se muestra como" hint="La etiqueta corta que acompaña a cada hora.">
             <TextInput
               value={draft.timeZoneLabel}
               onChange={(event) =>
@@ -437,17 +446,17 @@ function SettingsPanel({
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
           <Toggle
-            label="1:1 booking"
+            label="Reservas 1:1"
             checked={draft.bookingOpen}
             onChange={(bookingOpen) => setDraft({ ...draft, bookingOpen })}
           />
           <Toggle
-            label="Volunteer sign-up"
+            label="Inscripción de voluntarios"
             checked={draft.volunteersOpen}
             onChange={(volunteersOpen) => setDraft({ ...draft, volunteersOpen })}
           />
           <Toggle
-            label="Survey"
+            label="Encuesta"
             checked={draft.surveyOpen}
             onChange={(surveyOpen) => setDraft({ ...draft, surveyOpen })}
           />
@@ -488,21 +497,21 @@ function AvailabilityPanel({
 
   return (
     <Panel
-      title="When I'm available"
-      subtitle={`Tap to open or close a ${SLOT_MINUTES}-minute slot. Closed slots never appear on the public page.`}
+      title="Cuándo estoy disponible"
+      subtitle={`Toca para abrir o cerrar una franja de ${SLOT_MINUTES} minutos. Las franjas cerradas nunca aparecen en la página pública.`}
       actions={
         <div className="flex items-center gap-2">
           <StatusPill tone={dirtyCount > 0 ? "busy" : "good"}>
-            {dirtyCount > 0 ? `${dirtyCount} unsaved` : `${openCount} open`}
+            {dirtyCount > 0 ? `${dirtyCount} sin guardar` : `${openCount} abiertas`}
           </StatusPill>
           {dirtyCount > 0 && (
             <>
               <Button onClick={onDiscard} disabled={busy}>
-                Discard
+                Descartar
               </Button>
               <Button variant="primary" onClick={() => void onSave()} disabled={busy}>
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                Save
+                Guardar
               </Button>
             </>
           )}
@@ -529,7 +538,7 @@ function AvailabilityPanel({
                       )
                     }
                   >
-                    Open all
+                    Abrir todo
                   </MiniButton>
                   <MiniButton
                     onClick={() =>
@@ -547,7 +556,7 @@ function AvailabilityPanel({
                       )
                     }
                   >
-                    9–5
+                    9–17
                   </MiniButton>
                   <MiniButton
                     onClick={() =>
@@ -563,7 +572,7 @@ function AvailabilityPanel({
                       )
                     }
                   >
-                    Clear
+                    Limpiar
                   </MiniButton>
                 </div>
               </div>
@@ -574,12 +583,12 @@ function AvailabilityPanel({
                     return (
                       <div
                         key={slot.id}
-                        title={`Your session runs ${prettyClock(SESSION.start)}–${prettyClock(SESSION.end)}`}
+                        title={`Tu sesión va de ${prettyClock(SESSION.start)} a ${prettyClock(SESSION.end)}`}
                         className="rounded-lg border border-violet-200 bg-violet-50 px-1 py-2 text-center text-[11px] text-violet-700"
                       >
                         {prettyClock(slot.start)}
                         <span className="mt-0.5 block text-[9px] uppercase tracking-[0.12em]">
-                          Session
+                          Sesión
                         </span>
                       </div>
                     );
@@ -597,9 +606,9 @@ function AvailabilityPanel({
                       aria-pressed={isOpen}
                       title={
                         booked
-                          ? `Booked by ${slot.booking?.name}`
+                          ? `Reservada por ${slot.booking?.name}`
                           : slot.past
-                            ? "Already passed"
+                            ? "Ya pasó"
                             : undefined
                       }
                       onClick={() => onToggle(slot.id, !isOpen)}
@@ -617,9 +626,9 @@ function AvailabilityPanel({
                       {prettyClock(slot.start)}
                       <span className="mt-0.5 block truncate text-[9px] uppercase tracking-[0.12em]">
                         {booked
-                          ? (slot.booking?.name.split(" ")[0] ?? "Booked")
+                          ? (slot.booking?.name.split(" ")[0] ?? "Reservada")
                           : isOpen
-                            ? "Open"
+                            ? "Abierta"
                             : "—"}
                       </span>
                     </button>
@@ -665,8 +674,8 @@ function BookingsPanel({
 }) {
   return (
     <Panel
-      title={`1:1 bookings · ${bookings.length}`}
-      subtitle={`All times ${label}.`}
+      title={`Reservas 1:1 · ${bookings.length}`}
+      subtitle={`Todas las horas en ${label}.`}
       actions={
         <Button onClick={onExport} disabled={bookings.length === 0}>
           <Download size={14} /> CSV
@@ -674,7 +683,7 @@ function BookingsPanel({
       }
     >
       {bookings.length === 0 ? (
-        <p className="py-6 text-center text-sm text-slate-500">Nothing booked yet.</p>
+        <p className="py-6 text-center text-sm text-slate-500">Todavía no hay reservas.</p>
       ) : (
         <ul className="divide-y divide-white/5">
           {bookings.map((booking) => {
@@ -709,8 +718,8 @@ function BookingsPanel({
                   </code>
                   <ConfirmButton
                     onConfirm={() => onCancel(booking.id)}
-                    idle="Cancel"
-                    confirm="Really cancel?"
+                    idle="Cancelar"
+                    confirm="¿Seguro?"
                   />
                 </div>
               </li>
@@ -721,6 +730,13 @@ function BookingsPanel({
     </Panel>
   );
 }
+
+/** The stored standings are English identifiers; the console is not. */
+const STANDING_LABEL: Record<VolunteerStanding, string> = {
+  selected: "en el escenario",
+  backup: "suplente",
+  waitlist: "lista de espera",
+};
 
 const STANDING_TONE: Record<VolunteerStanding, string> = {
   selected: "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-200",
@@ -739,8 +755,8 @@ function VolunteersPanel({
 }) {
   return (
     <Panel
-      title={`Volunteers · ${volunteers.length}`}
-      subtitle={`${VOLUNTEER_LIMITS.selected} on stage, ${VOLUNTEER_LIMITS.backup} backup. Standing follows sign-up order, so removing someone moves everyone behind them up.`}
+      title={`Voluntarios · ${volunteers.length}`}
+      subtitle={`${VOLUNTEER_LIMITS.selected} en el escenario, ${VOLUNTEER_LIMITS.backup} suplente. La situación sigue el orden de inscripción, así que quitar a alguien sube un puesto a todos los de detrás.`}
       actions={
         <Button onClick={onExport} disabled={volunteers.length === 0}>
           <Download size={14} /> CSV
@@ -748,7 +764,7 @@ function VolunteersPanel({
       }
     >
       {volunteers.length === 0 ? (
-        <p className="py-6 text-center text-sm text-slate-500">Nobody yet.</p>
+        <p className="py-6 text-center text-sm text-slate-500">Todavía nadie.</p>
       ) : (
         <ul className="divide-y divide-white/5">
           {volunteers.map((volunteer) => (
@@ -765,7 +781,7 @@ function VolunteersPanel({
                       STANDING_TONE[volunteer.standing],
                     )}
                   >
-                    {volunteer.standing}
+                    {STANDING_LABEL[volunteer.standing]}
                   </span>
                 </p>
                 <p className="truncate text-xs text-slate-500">
@@ -781,8 +797,8 @@ function VolunteersPanel({
               </div>
               <ConfirmButton
                 onConfirm={() => onRemove(volunteer.id)}
-                idle="Remove"
-                confirm="Really remove?"
+                idle="Quitar"
+                confirm="¿Seguro?"
               />
             </li>
           ))}
@@ -805,8 +821,8 @@ function SurveyPanel({
 
   return (
     <Panel
-      title={`Survey · ${surveys.length} response${surveys.length === 1 ? "" : "s"}`}
-      subtitle="Averages for the three scales; the written answers in full, newest first."
+      title={`Encuesta · ${surveys.length} respuesta${surveys.length === 1 ? "" : "s"}`}
+      subtitle="Promedios de las tres escalas; las respuestas escritas completas, las más recientes primero."
       actions={
         <Button onClick={onExport} disabled={surveys.length === 0}>
           <Download size={14} /> CSV
@@ -832,7 +848,9 @@ function SurveyPanel({
         </div>
 
         {surveys.length === 0 ? (
-          <p className="py-4 text-center text-sm text-slate-500">No responses yet.</p>
+          <p className="py-4 text-center text-sm text-slate-500">
+            Todavía no hay respuestas.
+          </p>
         ) : (
           <ul className="space-y-3">
             {surveys.map((response) => (
@@ -841,13 +859,13 @@ function SurveyPanel({
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
               >
                 <p className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                  <span>{new Date(response.createdAt).toLocaleString()}</span>
+                  <span>{new Date(response.createdAt).toLocaleString("es-ES")}</span>
                   {response.name && <span className="font-medium text-slate-700">{response.name}</span>}
                   {response.email && <span>{response.email}</span>}
                   {scales.map((scale) =>
                     typeof response.answers[scale.id] === "number" ? (
                       <span key={scale.id} className="tabular-nums text-slate-600">
-                        {scale.id}: {response.answers[scale.id]}
+                        {scale.short}: {response.answers[scale.id]}
                       </span>
                     ) : null,
                   )}
@@ -859,7 +877,7 @@ function SurveyPanel({
                       className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-800"
                     >
                       <span className="mr-1.5 text-[10px] uppercase tracking-[0.14em] text-slate-400">
-                        {question.id}
+                        {question.short}
                       </span>
                       {response.answers[question.id]}
                     </p>

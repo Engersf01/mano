@@ -1,6 +1,6 @@
 "use client";
 /**
- * Booking a 1:1 across the conference weekend.
+ * Booking a 1:1 across the conference weekend. Audience-facing, so Spanish.
  *
  * The grid shows only the times the host has actually opened. Closed slots are
  * not rendered greyed-out — an audience does not need to see the shape of
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 type Confirmation = {
   code: string;
   date: string;
+  /** Raw `HH:MM` wall clock, formatted only where it is displayed. */
   start: string;
   end: string;
   dayLabel: string;
@@ -70,7 +71,7 @@ export function SlotPicker({
         | { code: string; date: string; start: string; end: string }
         | { error: string };
       if (!response.ok || "error" in body) {
-        setError("error" in body ? body.error : "That didn't go through. Try again.");
+        setError("error" in body ? body.error : "No se pudo completar. Inténtalo otra vez.");
         // Re-read either way: "someone just took that slot" is only useful
         // alongside a grid that no longer offers it.
         onChanged();
@@ -87,7 +88,7 @@ export function SlotPicker({
       setTopic("");
       onChanged();
     } catch {
-      setError("Couldn't reach the server. Check your connection and try again.");
+      setError("No se pudo conectar con el servidor. Revisa tu conexión e inténtalo otra vez.");
     } finally {
       setBusy(false);
     }
@@ -96,8 +97,8 @@ export function SlotPicker({
   if (!state.settings.bookingOpen) {
     return (
       <ClosedNote>
-        1:1 booking is closed. If we already have something on the calendar, it still
-        stands.
+        Las reservas de 1:1 están cerradas. Si ya tenemos algo en el calendario, sigue
+        en pie.
       </ClosedNote>
     );
   }
@@ -107,19 +108,22 @@ export function SlotPicker({
       <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
         <div className="flex items-center gap-2 text-cyan-800">
           <CalendarCheck size={18} />
-          <h3 className="font-display text-lg font-semibold">You&apos;re booked</h3>
+          <h3 className="font-display text-lg font-semibold">Tu cita está reservada</h3>
         </div>
         <p className="mt-3 text-sm text-slate-700">
-          {confirmed.dayLabel}, <strong className="font-semibold text-slate-900">{confirmed.start}</strong> –{" "}
-          {confirmed.end} {state.settings.timeZoneLabel}
+          {confirmed.dayLabel},{" "}
+          <strong className="font-semibold text-slate-900">
+            {prettyClock(confirmed.start)}
+          </strong>{" "}
+          – {prettyClock(confirmed.end)} {state.settings.timeZoneLabel}
         </p>
         <p className="mt-4 text-xs leading-relaxed text-slate-600">
-          Your confirmation code is{" "}
+          Tu código de confirmación es{" "}
           <code className="rounded-md bg-white px-2 py-1 font-mono text-sm font-semibold tracking-[0.2em] text-cyan-800 ring-1 ring-cyan-200">
             {confirmed.code}
           </code>
-          . Keep it — it&apos;s how you cancel or move the slot. A calendar invite follows
-          by email.
+          . Guárdalo: es como cancelas o cambias la cita. Te llegará una invitación de
+          calendario por correo.
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
           <a
@@ -127,11 +131,11 @@ export function SlotPicker({
             download={`1-1-${confirmed.date}.ics`}
             className="inline-flex items-center gap-1.5 rounded-xl border border-transparent bg-cyan-700 px-3.5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-cyan-800"
           >
-            <CalendarCheck size={14} /> Add to my calendar
+            <CalendarCheck size={14} /> Añadir a mi calendario
           </a>
           {/* One open booking per email, so this is for the next person at a
               shared laptop rather than a second slot for the same one. */}
-          <Button onClick={() => setConfirmed(null)}>Book for someone else</Button>
+          <Button onClick={() => setConfirmed(null)}>Reservar para otra persona</Button>
         </div>
       </div>
     );
@@ -162,21 +166,21 @@ export function SlotPicker({
               >
                 <span className="block text-sm font-medium">{entry.short}</span>
                 <span className="block text-[10px] uppercase tracking-[0.18em] text-slate-500">
-                  {open} open
+                  {open} libres
                 </span>
               </button>
             );
           })}
         </div>
         <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
-          <Clock size={12} /> {SLOT_MINUTES}-minute slots · times in{" "}
+          <Clock size={12} /> Franjas de {SLOT_MINUTES} minutos · horas en{" "}
           {state.settings.timeZoneLabel}
         </p>
       </div>
 
       {bookable.length === 0 ? (
         <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-          Nothing open on {day?.short ?? "this day"} — try another day.
+          No hay nada libre el {day?.short ?? "ese día"} — prueba otro día.
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
@@ -205,7 +209,7 @@ export function SlotPicker({
                     isSelected ? "text-cyan-100" : "text-slate-500",
                   )}
                 >
-                  {slot.taken ? "Taken" : `to ${prettyClock(slot.end)}`}
+                  {slot.taken ? "Ocupada" : `hasta ${prettyClock(slot.end)}`}
                 </span>
               </button>
             );
@@ -227,43 +231,43 @@ export function SlotPicker({
             {state.settings.timeZoneLabel}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Your name">
+            <Field label="Tu nombre">
               <TextInput
                 required
                 autoComplete="name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Alex Rivera"
+                placeholder="Ana Rivera"
               />
             </Field>
-            <Field label="Email">
+            <Field label="Correo electrónico">
               <TextInput
                 required
                 type="email"
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="alex@company.com"
+                placeholder="ana@empresa.com"
               />
             </Field>
           </div>
-          <Field label="Company or team" hint="Optional.">
+          <Field label="Empresa o equipo" hint="Opcional.">
             <TextInput
               autoComplete="organization"
               value={organization}
               onChange={(event) => setOrganization(event.target.value)}
-              placeholder="Northwind Labs"
+              placeholder="Laboratorios Northwind"
             />
           </Field>
           <Field
-            label="What would you like to cover?"
-            hint="Optional, but it's what makes 15 minutes worth having."
+            label="¿Qué te gustaría tratar?"
+            hint="Opcional, pero es lo que hace que quince minutos valgan la pena."
           >
             <TextArea
               rows={3}
               value={topic}
               onChange={(event) => setTopic(event.target.value)}
-              placeholder="We're trying to…"
+              placeholder="Estamos intentando…"
             />
           </Field>
           {error && <ErrorNote>{error}</ErrorNote>}
@@ -275,10 +279,10 @@ export function SlotPicker({
               className="min-w-[10rem]"
             >
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-              {busy ? "Booking…" : "Confirm this time"}
+              {busy ? "Reservando…" : "Confirmar esta hora"}
             </Button>
             <Button onClick={() => setSelected(null)} disabled={busy}>
-              Pick a different time
+              Elegir otra hora
             </Button>
           </div>
         </form>
@@ -299,7 +303,7 @@ export function SlotPicker({
             onClick={() => setCancelling(true)}
             className="inline-flex items-center gap-1.5 text-xs text-slate-500 underline decoration-dotted underline-offset-4 transition hover:text-slate-900"
           >
-            <Undo2 size={12} /> Already booked and need to cancel?
+            <Undo2 size={12} /> ¿Ya reservaste y necesitas cancelar?
           </button>
         )}
       </div>
@@ -325,13 +329,13 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
       });
       const body = (await response.json()) as { error?: string };
       if (!response.ok) {
-        setError(body.error ?? "That didn't work.");
+        setError(body.error ?? "No funcionó.");
         return;
       }
       setDone(true);
       onDone();
     } catch {
-      setError("Couldn't reach the server. Try again.");
+      setError("No se pudo conectar con el servidor. Inténtalo otra vez.");
     } finally {
       setBusy(false);
     }
@@ -340,7 +344,7 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
   if (done) {
     return (
       <p className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
-        Cancelled — the slot is back in the grid. Thanks for freeing it up.
+        Cancelada — la franja vuelve a estar disponible. Gracias por liberarla.
       </p>
     );
   }
@@ -354,10 +358,10 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
       className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
     >
       <p className="text-xs text-slate-600">
-        Enter the email you booked with and the code from your confirmation.
+        Introduce el correo con el que reservaste y el código de tu confirmación.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Email">
+        <Field label="Correo electrónico">
           <TextInput
             required
             type="email"
@@ -365,7 +369,7 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
             onChange={(event) => setEmail(event.target.value)}
           />
         </Field>
-        <Field label="Confirmation code">
+        <Field label="Código de confirmación">
           <TextInput
             required
             value={code}
@@ -378,10 +382,10 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
       {error && <ErrorNote>{error}</ErrorNote>}
       <div className="flex gap-2">
         <Button type="submit" variant="danger" disabled={busy}>
-          {busy ? <Loader2 size={14} className="animate-spin" /> : null} Cancel my slot
+          {busy ? <Loader2 size={14} className="animate-spin" /> : null} Cancelar mi cita
         </Button>
         <Button onClick={onClose} disabled={busy}>
-          Never mind
+          Mejor no
         </Button>
       </div>
     </form>
@@ -405,31 +409,23 @@ function ClosedNote({ children }: { children: React.ReactNode }) {
  * the right local time on a calendar set to anywhere.
  */
 function calendarLink(confirmed: Confirmation, state: PublicState) {
-  const [hours, minutes] = to24(confirmed.start);
-  const [endHours, endMinutes] = to24(confirmed.end);
   const day = confirmed.date.replace(/-/g, "");
-  const pad = (n: number) => n.toString().padStart(2, "0");
+  // `HH:MM` straight from the server, so this is a colon removal rather than
+  // a parse. Nothing here has to interpret an am/pm string, which is the step
+  // that could silently place the event twelve hours from the real slot.
+  const stamp = (clock: string) => `${day}T${clock.replace(":", "")}00`;
   const body = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//NeumoMeet Speaker Hub//EN",
+    "PRODID:-//NeumoMeet Speaker Hub//ES",
     "BEGIN:VEVENT",
     `UID:${confirmed.code}@neumomeet`,
-    `SUMMARY:1:1 conversation (${confirmed.code})`,
-    `DTSTART;TZID=${state.settings.timeZone}:${day}T${pad(hours)}${pad(minutes)}00`,
-    `DTEND;TZID=${state.settings.timeZone}:${day}T${pad(endHours)}${pad(endMinutes)}00`,
-    "DESCRIPTION:Booked from the conference speaker hub.",
+    `SUMMARY:Conversación 1:1 (${confirmed.code})`,
+    `DTSTART;TZID=${state.settings.timeZone}:${stamp(confirmed.start)}`,
+    `DTEND;TZID=${state.settings.timeZone}:${stamp(confirmed.end)}`,
+    "DESCRIPTION:Reservado desde la página de NeumoMeet.",
     "END:VEVENT",
     "END:VCALENDAR",
   ].join("\r\n");
   return `data:text/calendar;charset=utf-8,${encodeURIComponent(body)}`;
-}
-
-/** "1:20 PM" back to [13, 20] — the confirmation carries display strings. */
-function to24(display: string): [number, number] {
-  const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(display.trim());
-  if (!match) return [0, 0];
-  let hours = Number(match[1]) % 12;
-  if (match[3].toUpperCase() === "PM") hours += 12;
-  return [hours, Number(match[2])];
 }
