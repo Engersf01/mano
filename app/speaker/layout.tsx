@@ -1,10 +1,23 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: "NeumoMeet · Watch, book, volunteer",
   description:
     "Watch the session recap, book a 15–20 minute 1:1 across the October 2–4 weekend, volunteer for the October 3 session, or leave feedback.",
+};
+
+/**
+ * White, against the root layout's near-black.
+ *
+ * `theme-color` is the one piece of the dark theme a stylesheet cannot reach:
+ * it paints the browser's own chrome — the address bar on Android Chrome, the
+ * status area on an installed iOS web app. Inherited from the root it puts a
+ * near-black bar directly above a white page, which on a phone is the first
+ * thing anyone sees of this brand.
+ */
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
 };
 
 export default function SpeakerLayout({ children }: { children: ReactNode }) {
