@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { readData } from "@/server/speakerStore";
-import { ConferenceMark } from "@/ui/speaker/ConferenceMark";
+import { BrandMark } from "@/ui/speaker/BrandMark";
+import { PageBackdrop } from "@/ui/speaker/primitives";
 import { SurveyForm } from "@/ui/speaker/SurveyForm";
 
 export const dynamic = "force-dynamic";
@@ -18,25 +19,23 @@ export default async function SurveyPage() {
 
   return (
     <main className="relative min-h-screen pb-24">
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="aurora-bg" />
-      </div>
+      <PageBackdrop />
 
       <div className="mx-auto max-w-2xl px-5">
         <header className="flex items-center justify-between gap-4 py-5">
-          <ConferenceMark />
+          <BrandMark />
           <Link
             href="/speaker"
-            className="text-xs text-ink-400 transition hover:text-ink-100"
+            className="text-xs text-slate-500 transition hover:text-slate-900"
           >
             Speaker hub
           </Link>
         </header>
 
-        <h1 className="mt-6 font-display text-3xl font-medium tracking-tight sm:text-4xl">
+        <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
           How did our conversation go?
         </h1>
-        <p className="mt-3 text-sm leading-relaxed text-ink-300">
+        <p className="mt-3 text-sm leading-relaxed text-slate-600">
           Five questions, about a minute. Honest beats kind — the two written answers
           are the ones that change the next talk.
         </p>

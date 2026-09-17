@@ -15,7 +15,7 @@ import { Check, Laptop, Loader2, Mic, Users, Wand2 } from "lucide-react";
 import { SESSION, VOLUNTEER_REQUIREMENTS, prettyClock } from "@/speaker/config";
 import { VOLUNTEER_LIMITS } from "@/speaker/derive";
 import type { PublicState, VolunteerStanding } from "@/speaker/types";
-import { Button, ErrorNote, Field, TextArea, TextInput } from "@/ui/avatar/primitives";
+import { Button, ErrorNote, Field, TextArea, TextInput } from "@/ui/speaker/primitives";
 import { cn } from "@/lib/utils";
 
 const ICONS = { tech: Wand2, laptop: Laptop, speaking: Mic } as const;
@@ -23,17 +23,17 @@ const ICONS = { tech: Wand2, laptop: Laptop, speaking: Mic } as const;
 const STANDING_COPY: Record<VolunteerStanding, { badge: string; tone: string; line: string }> = {
   selected: {
     badge: "On stage",
-    tone: "bg-aurora-cyan/15 text-aurora-cyan",
+    tone: "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-200",
     line: "You're one of the four coming up during the session.",
   },
   backup: {
     badge: "Backup",
-    tone: "bg-aurora-gold/15 text-aurora-gold",
+    tone: "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
     line: "You're the backup — come ready, and you're on if anyone drops.",
   },
   waitlist: {
     badge: "Waitlist",
-    tone: "bg-white/5 text-ink-300",
+    tone: "bg-slate-100 text-slate-600 ring-1 ring-slate-200",
     line: "You're on the waitlist. I'll email you if a spot opens up.",
   },
 };
@@ -97,13 +97,13 @@ export function VolunteerSignup({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-        <p className="text-sm text-ink-100">
-          <strong className="text-white">{state.session.label}</strong>,{" "}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <p className="text-sm text-slate-700">
+          <strong className="font-semibold text-slate-900">{state.session.label}</strong>,{" "}
           {prettyClock(state.session.start)} – {prettyClock(state.session.end)}{" "}
           {state.settings.timeZoneLabel}
         </p>
-        <p className="flex items-center gap-1.5 text-[11px] text-ink-400">
+        <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
           <Users size={12} /> {VOLUNTEER_LIMITS.selected} on stage +{" "}
           {VOLUNTEER_LIMITS.backup} backup
         </p>
@@ -122,19 +122,19 @@ export function VolunteerSignup({
               className={cn(
                 "rounded-xl border px-3 py-2.5 text-center",
                 taken
-                  ? "border-white/10 bg-white/[0.06]"
-                  : "border-dashed border-white/15 bg-transparent",
+                  ? "border-slate-200 bg-white shadow-sm"
+                  : "border-dashed border-slate-300 bg-slate-50/60",
               )}
             >
               <p
                 className={cn(
                   "truncate text-sm font-medium",
-                  taken ? "text-white" : "text-ink-500",
+                  taken ? "text-slate-900" : "text-slate-400",
                 )}
               >
                 {taken ? taken.firstName : "Open"}
               </p>
-              <p className="mt-0.5 text-[10px] uppercase tracking-[0.16em] text-ink-400">
+              <p className="mt-0.5 text-[10px] uppercase tracking-[0.16em] text-slate-500">
                 {standing === "selected" ? `Spot ${index + 1}` : "Backup"}
               </p>
             </div>
@@ -143,7 +143,7 @@ export function VolunteerSignup({
       </div>
 
       {result ? (
-        <div className="rounded-2xl border border-aurora-cyan/30 bg-aurora-cyan/[0.07] p-6">
+        <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
           <span
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.2em]",
@@ -152,13 +152,13 @@ export function VolunteerSignup({
           >
             <Check size={12} /> {STANDING_COPY[result.standing].badge}
           </span>
-          <h3 className="mt-3 font-display text-lg font-medium text-white">
+          <h3 className="mt-3 font-display text-lg font-semibold text-slate-900">
             You&apos;re signed up, #{result.position}
           </h3>
-          <p className="mt-1 text-sm text-ink-100">{STANDING_COPY[result.standing].line}</p>
-          <p className="mt-4 text-xs leading-relaxed text-ink-300">
+          <p className="mt-1 text-sm text-slate-700">{STANDING_COPY[result.standing].line}</p>
+          <p className="mt-4 text-xs leading-relaxed text-slate-600">
             Your code is{" "}
-            <code className="rounded-md bg-ink-950/70 px-2 py-1 font-mono text-sm tracking-[0.2em] text-aurora-cyan">
+            <code className="rounded-md bg-white px-2 py-1 font-mono text-sm font-semibold tracking-[0.2em] text-cyan-800 ring-1 ring-cyan-200">
               {result.code}
             </code>
             . Keep it in case you need to withdraw — please do that rather than just not
@@ -166,7 +166,7 @@ export function VolunteerSignup({
           </p>
         </div>
       ) : !state.settings.volunteersOpen ? (
-        <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center text-sm text-ink-300">
+        <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
           Volunteer sign-up is closed — the roster above is final.
         </p>
       ) : (
@@ -175,10 +175,10 @@ export function VolunteerSignup({
             event.preventDefault();
             void signUp();
           }}
-          className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+          className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
         >
           <fieldset className="space-y-2">
-            <legend className="mb-2 text-[10px] uppercase tracking-[0.2em] text-ink-400">
+            <legend className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
               All three are required
             </legend>
             {VOLUNTEER_REQUIREMENTS.map((requirement) => {
@@ -190,8 +190,8 @@ export function VolunteerSignup({
                   className={cn(
                     "flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition",
                     checked
-                      ? "border-aurora-cyan/35 bg-aurora-cyan/[0.08]"
-                      : "border-white/10 bg-ink-900/50 hover:bg-white/[0.05]",
+                      ? "border-cyan-600 bg-cyan-50 ring-1 ring-cyan-600/40"
+                      : "border-slate-300 bg-white hover:bg-slate-50",
                   )}
                 >
                   <input
@@ -203,14 +203,14 @@ export function VolunteerSignup({
                         [requirement.id]: event.target.checked,
                       }))
                     }
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#60f5ff]"
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-cyan-700"
                   />
                   <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 text-sm font-medium text-ink-50">
-                      <Icon size={13} className="shrink-0 text-aurora-cyan" />
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-slate-900">
+                      <Icon size={13} className="shrink-0 text-cyan-700" />
                       {requirement.label}
                     </span>
-                    <span className="mt-0.5 block text-xs leading-relaxed text-ink-400">
+                    <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
                       {requirement.detail}
                     </span>
                   </span>
@@ -277,14 +277,14 @@ export function VolunteerSignup({
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               {busy ? "Signing up…" : "Count me in"}
             </Button>
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-slate-500">
               {spotsLeft > 0
                 ? `${spotsLeft} of ${VOLUNTEER_LIMITS.capacity} spots left.`
                 : "All spots are taken — you'll join the waitlist."}
             </p>
           </div>
           {!allConfirmed && (
-            <p className="text-xs text-ink-400">
+            <p className="text-xs text-slate-500">
               Tick all three requirements above to sign up.
             </p>
           )}
@@ -292,7 +292,7 @@ export function VolunteerSignup({
       )}
 
       <WithdrawForm onChanged={onChanged} />
-      <p className="text-[11px] leading-relaxed text-ink-500">
+      <p className="text-[11px] leading-relaxed text-slate-500">
         Volunteers meet me at the front five minutes before {prettyClock(SESSION.start)} on{" "}
         {SESSION.label}.
       </p>
@@ -310,7 +310,7 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
 
   if (done) {
     return (
-      <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-ink-100">
+      <p className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
         Withdrawn — thanks for telling me. The next person on the list moves up.
       </p>
     );
@@ -321,7 +321,7 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs text-ink-400 underline decoration-dotted underline-offset-4 transition hover:text-ink-100"
+        className="text-xs text-slate-500 underline decoration-dotted underline-offset-4 transition hover:text-slate-900"
       >
         Signed up and can no longer make it?
       </button>
@@ -357,7 +357,7 @@ function WithdrawForm({ onChanged }: { onChanged: () => void }) {
         event.preventDefault();
         void withdraw();
       }}
-      className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+      className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Email">

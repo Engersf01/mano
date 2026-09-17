@@ -11,7 +11,7 @@ import { useMemo, useState } from "react";
 import { CalendarCheck, Check, Clock, Loader2, Undo2 } from "lucide-react";
 import { SLOT_MINUTES, prettyClock } from "@/speaker/config";
 import type { PublicSlot, PublicState } from "@/speaker/types";
-import { Button, ErrorNote, Field, TextArea, TextInput } from "@/ui/avatar/primitives";
+import { Button, ErrorNote, Field, TextArea, TextInput } from "@/ui/speaker/primitives";
 import { cn } from "@/lib/utils";
 
 type Confirmation = {
@@ -104,18 +104,18 @@ export function SlotPicker({
 
   if (confirmed) {
     return (
-      <div className="rounded-2xl border border-aurora-cyan/30 bg-aurora-cyan/[0.07] p-6">
-        <div className="flex items-center gap-2 text-aurora-cyan">
+      <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
+        <div className="flex items-center gap-2 text-cyan-800">
           <CalendarCheck size={18} />
-          <h3 className="font-display text-lg font-medium">You&apos;re booked</h3>
+          <h3 className="font-display text-lg font-semibold">You&apos;re booked</h3>
         </div>
-        <p className="mt-3 text-sm text-ink-100">
-          {confirmed.dayLabel}, <strong className="text-white">{confirmed.start}</strong> –{" "}
+        <p className="mt-3 text-sm text-slate-700">
+          {confirmed.dayLabel}, <strong className="font-semibold text-slate-900">{confirmed.start}</strong> –{" "}
           {confirmed.end} {state.settings.timeZoneLabel}
         </p>
-        <p className="mt-4 text-xs leading-relaxed text-ink-300">
+        <p className="mt-4 text-xs leading-relaxed text-slate-600">
           Your confirmation code is{" "}
-          <code className="rounded-md bg-ink-950/70 px-2 py-1 font-mono text-sm tracking-[0.2em] text-aurora-cyan">
+          <code className="rounded-md bg-white px-2 py-1 font-mono text-sm font-semibold tracking-[0.2em] text-cyan-800 ring-1 ring-cyan-200">
             {confirmed.code}
           </code>
           . Keep it — it&apos;s how you cancel or move the slot. A calendar invite follows
@@ -125,7 +125,7 @@ export function SlotPicker({
           <a
             href={calendarLink(confirmed, state)}
             download={`1-1-${confirmed.date}.ics`}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-aurora-cyan/30 bg-aurora-cyan/15 px-3 py-2 text-sm font-medium text-aurora-cyan transition hover:bg-aurora-cyan/25"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-transparent bg-cyan-700 px-3.5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-cyan-800"
           >
             <CalendarCheck size={14} /> Add to my calendar
           </a>
@@ -156,26 +156,26 @@ export function SlotPicker({
                 className={cn(
                   "rounded-xl border px-3.5 py-2 text-left transition",
                   entry.date === activeDay
-                    ? "border-aurora-cyan/40 bg-aurora-cyan/10 text-white"
-                    : "border-white/10 bg-white/[0.03] text-ink-200 hover:bg-white/[0.06]",
+                    ? "border-cyan-600 bg-cyan-50 text-cyan-900 ring-1 ring-cyan-600"
+                    : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50",
                 )}
               >
                 <span className="block text-sm font-medium">{entry.short}</span>
-                <span className="block text-[10px] uppercase tracking-[0.18em] text-ink-400">
+                <span className="block text-[10px] uppercase tracking-[0.18em] text-slate-500">
                   {open} open
                 </span>
               </button>
             );
           })}
         </div>
-        <p className="flex items-center gap-1.5 text-[11px] text-ink-400">
+        <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
           <Clock size={12} /> {SLOT_MINUTES}-minute slots · times in{" "}
           {state.settings.timeZoneLabel}
         </p>
       </div>
 
       {bookable.length === 0 ? (
-        <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center text-sm text-ink-300">
+        <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
           Nothing open on {day?.short ?? "this day"} — try another day.
         </p>
       ) : (
@@ -192,14 +192,19 @@ export function SlotPicker({
                 className={cn(
                   "rounded-xl border px-2 py-3 text-center text-sm font-medium tabular-nums transition",
                   slot.taken
-                    ? "cursor-not-allowed border-white/5 bg-white/[0.02] text-ink-500 line-through"
+                    ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 line-through"
                     : isSelected
-                      ? "border-aurora-cyan/50 bg-aurora-cyan/20 text-white shadow-glow"
-                      : "border-white/10 bg-white/[0.04] text-ink-100 hover:border-aurora-cyan/30 hover:bg-white/[0.08]",
+                      ? "border-cyan-700 bg-cyan-700 text-white shadow-md shadow-cyan-700/20"
+                      : "border-slate-300 bg-white text-slate-800 hover:border-cyan-600 hover:bg-cyan-50",
                 )}
               >
                 {prettyClock(slot.start)}
-                <span className="mt-0.5 block text-[10px] font-normal uppercase tracking-[0.16em] text-ink-400">
+                <span
+                  className={cn(
+                    "mt-0.5 block text-[10px] font-normal uppercase tracking-[0.16em]",
+                    isSelected ? "text-cyan-100" : "text-slate-500",
+                  )}
+                >
                   {slot.taken ? "Taken" : `to ${prettyClock(slot.end)}`}
                 </span>
               </button>
@@ -214,10 +219,10 @@ export function SlotPicker({
             event.preventDefault();
             void book();
           }}
-          className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+          className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
         >
-          <p className="text-sm text-ink-100">
-            <strong className="text-white">{day?.label}</strong> ·{" "}
+          <p className="text-sm text-slate-700">
+            <strong className="font-semibold text-slate-900">{day?.label}</strong> ·{" "}
             {prettyClock(selected.start)} – {prettyClock(selected.end)}{" "}
             {state.settings.timeZoneLabel}
           </p>
@@ -292,7 +297,7 @@ export function SlotPicker({
           <button
             type="button"
             onClick={() => setCancelling(true)}
-            className="inline-flex items-center gap-1.5 text-xs text-ink-400 underline decoration-dotted underline-offset-4 transition hover:text-ink-100"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-500 underline decoration-dotted underline-offset-4 transition hover:text-slate-900"
           >
             <Undo2 size={12} /> Already booked and need to cancel?
           </button>
@@ -334,7 +339,7 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
 
   if (done) {
     return (
-      <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-ink-100">
+      <p className="rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-900">
         Cancelled — the slot is back in the grid. Thanks for freeing it up.
       </p>
     );
@@ -346,9 +351,9 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
         event.preventDefault();
         void cancel();
       }}
-      className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
+      className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
     >
-      <p className="text-xs text-ink-300">
+      <p className="text-xs text-slate-600">
         Enter the email you booked with and the code from your confirmation.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -385,7 +390,7 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
 
 function ClosedNote({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center text-sm text-ink-300">
+    <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
       {children}
     </p>
   );
@@ -407,9 +412,9 @@ function calendarLink(confirmed: Confirmation, state: PublicState) {
   const body = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//KN Speaker Hub//EN",
+    "PRODID:-//NeumoMeet Speaker Hub//EN",
     "BEGIN:VEVENT",
-    `UID:${confirmed.code}@kn-speaker`,
+    `UID:${confirmed.code}@neumomeet`,
     `SUMMARY:1:1 conversation (${confirmed.code})`,
     `DTSTART;TZID=${state.settings.timeZone}:${day}T${pad(hours)}${pad(minutes)}00`,
     `DTEND;TZID=${state.settings.timeZone}:${day}T${pad(endHours)}${pad(endMinutes)}00`,

@@ -11,7 +11,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, MessageSquareQuote, Users } from "lucide-react";
 import type { PublicState } from "@/speaker/types";
-import { ConferenceMark } from "@/ui/speaker/ConferenceMark";
+import { BrandMark } from "@/ui/speaker/BrandMark";
+import { PageBackdrop } from "@/ui/speaker/primitives";
 import { SlotPicker } from "@/ui/speaker/SlotPicker";
 import { SurveyForm } from "@/ui/speaker/SurveyForm";
 import { VideoStage } from "@/ui/speaker/VideoStage";
@@ -64,20 +65,17 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
 
   return (
     <main className="relative min-h-screen pb-24">
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="aurora-bg" />
-        <div className="absolute inset-0 [background-image:radial-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:32px_32px] opacity-40" />
-      </div>
+      <PageBackdrop />
 
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-ink-950/80 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-5 py-3">
-          <ConferenceMark />
-          <nav className="hidden items-center gap-1 text-sm text-ink-200 sm:flex">
+          <BrandMark />
+          <nav className="hidden items-center gap-1 text-sm text-slate-600 sm:flex">
             {SECTIONS.map((section) => (
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                className="rounded-xl px-3 py-1.5 transition hover:bg-white/5 hover:text-white"
+                className="rounded-xl px-3 py-1.5 transition hover:bg-slate-100 hover:text-slate-900"
               >
                 {section.label}
               </a>
@@ -88,17 +86,17 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
 
       <div className="mx-auto max-w-4xl px-5">
         <section className="pt-10 sm:pt-14">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-aurora-cyan">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-700">
             October 2–4 · {state.settings.timeZoneLabel}
           </p>
-          <h1 className="mt-3 font-display text-balance text-4xl font-medium tracking-tight sm:text-5xl">
+          <h1 className="mt-3 font-display text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
             Watch this,{" "}
-            <span className="bg-gradient-to-r from-aurora-cyan via-aurora-violet to-aurora-pink bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyan-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
               then take one action.
             </span>
           </h1>
-          <p className="mt-4 max-w-2xl text-balance text-base leading-relaxed text-ink-200">
-            Three minutes of video, then pick whichever one applies to you: grab 15–20
+          <p className="mt-4 max-w-2xl text-balance text-base leading-relaxed text-slate-600">
+            Ninety seconds of video, then pick whichever one applies to you: grab 15–20
             minutes with me over the weekend, come up on stage during the Saturday
             session, or tell me how our conversation went.
           </p>
@@ -121,12 +119,12 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 transition hover:border-aurora-cyan/30 hover:bg-white/[0.06]"
+                className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-cyan-500 hover:shadow-md"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-aurora-cyan/15 text-aurora-cyan">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700 ring-1 ring-cyan-100">
                   <section.Icon size={16} />
                 </span>
-                <span className="text-sm font-medium text-ink-50">{section.label}</span>
+                <span className="text-sm font-medium text-slate-900">{section.label}</span>
               </a>
             ))}
           </div>
@@ -157,11 +155,11 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
           blurb="Five questions, about a minute. Best filled in right after we talk on October 3, while it's still fresh."
         >
           <SurveyForm open={state.settings.surveyOpen} onSubmitted={refresh} />
-          <p className="mt-4 text-[11px] text-ink-500">
+          <p className="mt-4 text-[11px] text-slate-500">
             Sharing this with a group? Send them{" "}
             <Link
               href="/speaker/survey"
-              className="text-ink-300 underline decoration-dotted underline-offset-4 hover:text-white"
+              className="text-slate-600 underline decoration-dotted underline-offset-4 hover:text-slate-900"
             >
               /speaker/survey
             </Link>{" "}
@@ -169,9 +167,9 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
           </p>
         </Section>
 
-        <footer className="mt-20 flex flex-wrap items-center justify-between gap-3 border-t border-white/5 pt-6 text-[11px] text-ink-500">
+        <footer className="mt-20 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-6 text-[11px] text-slate-500">
           <span>October 2–4, 2026 · all times {state.settings.timeZoneLabel}</span>
-          <Link href="/speaker/host" className="transition hover:text-ink-200">
+          <Link href="/speaker/host" className="transition hover:text-slate-800">
             Host console
           </Link>
         </footer>
@@ -197,11 +195,11 @@ function Section({
     // `scroll-mt` keeps the sticky header from covering the heading it just
     // scrolled to, which otherwise looks like the anchor overshot.
     <section id={id} className="scroll-mt-20 pt-16">
-      <p className="text-[11px] uppercase tracking-[0.28em] text-ink-400">{eyebrow}</p>
-      <h2 className="mt-2 font-display text-2xl font-medium tracking-tight sm:text-3xl">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">{eyebrow}</p>
+      <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
         {title}
       </h2>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-ink-300">{blurb}</p>
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">{blurb}</p>
       <div className="mt-6">{children}</div>
     </section>
   );

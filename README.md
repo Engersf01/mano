@@ -14,7 +14,7 @@ Open `/` to land. From there you can:
 - **Open the stage** — `/present` is the full presenter view: 3D scene, presenter notes, camera tile with hand overlay, AI panel, control dock.
 - **Audience window** — click *Audience* on the dock to pop out a clean `/audience` route on a second monitor.
 - **Avatar console** — `/avatar` drives a HeyGen LiveAvatar on an attached Android display and manages its knowledge. See [docs/avatar.md](docs/avatar.md).
-- **Speaker hub** — `/speaker` is the audience-facing page for the October 2–4 conference weekend: watch the session video, then book a 15–20 minute 1:1, volunteer for the October 3 session, or leave feedback. `/speaker/host` is the other side of it. See [docs/speaker-hub.md](docs/speaker-hub.md).
+- **NeumoMeet speaker hub** — `/speaker` is the audience-facing page (white-branded, unlike the rest of the app) for the October 2–4 conference weekend: watch the session video, then book a 15–20 minute 1:1, volunteer for the October 3 session, or leave feedback. `/speaker/host` is the other side of it. See [docs/speaker-hub.md](docs/speaker-hub.md).
 
 ## Stack
 

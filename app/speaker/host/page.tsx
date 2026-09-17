@@ -11,7 +11,7 @@ import dynamic from "next/dynamic";
  */
 const HostClient = dynamic(() => import("./HostClient"), {
   ssr: false,
-  loading: () => <div className="min-h-screen bg-ink-950" />,
+  loading: () => <div className="min-h-screen bg-white" />,
 });
 
 export default function HostPage() {

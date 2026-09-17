@@ -35,21 +35,22 @@ import type {
   Volunteer,
   VolunteerStanding,
 } from "@/speaker/types";
+import { BrandMark } from "@/ui/speaker/BrandMark";
 import {
   Button,
   ErrorNote,
   Field,
+  PageBackdrop,
   Panel,
   StatusPill,
   TextInput,
   Toggle,
-} from "@/ui/avatar/primitives";
-import { ConferenceMark } from "@/ui/speaker/ConferenceMark";
+} from "@/ui/speaker/primitives";
 import { cn } from "@/lib/utils";
 
 /** Survives a reload so a refresh mid-event doesn't mean finding the passcode
  *  again. Session, not local: it clears when the browser session ends. */
-const REMEMBERED = "kn-speaker-host-passcode";
+const REMEMBERED = "neumomeet-host-passcode";
 
 type HostSlot = {
   id: string;
@@ -187,7 +188,7 @@ export default function HostClient() {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
         anchor.href = url;
-        anchor.download = `kn-speaker-${kind}.csv`;
+        anchor.download = `neumomeet-${kind}.csv`;
         anchor.click();
         URL.revokeObjectURL(url);
       } catch {
@@ -220,11 +221,11 @@ export default function HostClient() {
 
   return (
     <main className="min-h-screen pb-24">
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-ink-950/85 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3">
           <div className="flex items-center gap-4">
-            <ConferenceMark />
-            <span className="hidden text-[11px] uppercase tracking-[0.25em] text-ink-400 sm:inline">
+            <BrandMark />
+            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400 sm:inline">
               Host console
             </span>
           </div>
@@ -239,7 +240,7 @@ export default function HostClient() {
             </Button>
             <Link
               href="/speaker"
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-ink-100 transition hover:bg-white/10"
+              className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-700 transition hover:bg-slate-50"
             >
               View public page
             </Link>
@@ -251,7 +252,7 @@ export default function HostClient() {
         {error && <ErrorNote>{error}</ErrorNote>}
 
         {data?.store.ephemeral && (
-          <div className="flex items-start gap-3 rounded-2xl border border-aurora-gold/30 bg-aurora-gold/[0.08] px-4 py-3 text-xs leading-relaxed text-aurora-gold">
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
             <TriangleAlert size={16} className="mt-0.5 shrink-0" />
             <p>
               <strong>Bookings will be lost.</strong> This deployment is serverless and
@@ -265,7 +266,7 @@ export default function HostClient() {
         )}
 
         {!data ? (
-          <p className="py-16 text-center text-sm text-ink-400">
+          <p className="py-16 text-center text-sm text-slate-500">
             {busy ? "Loading…" : "Nothing loaded."}
           </p>
         ) : (
@@ -331,17 +332,17 @@ function PasscodeGate({
 }) {
   return (
     <main className="flex min-h-screen items-center justify-center px-5">
-      <div className="aurora-bg pointer-events-none fixed inset-0 -z-10" />
+      <PageBackdrop />
       <form
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
         }}
-        className="w-full max-w-sm space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur"
+        className="w-full max-w-sm space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/60"
       >
-        <div className="flex items-center gap-2 text-aurora-cyan">
+        <div className="flex items-center gap-2 text-cyan-700">
           <LockKeyhole size={16} />
-          <h1 className="font-display text-lg font-medium text-white">Host console</h1>
+          <h1 className="font-display text-lg font-semibold text-slate-900">Host console</h1>
         </div>
         <Field label="Passcode" hint="Set as SPEAKER_HOST_PASSCODE in the environment.">
           <TextInput
@@ -491,7 +492,7 @@ function AvailabilityPanel({
       subtitle={`Tap to open or close a ${SLOT_MINUTES}-minute slot. Closed slots never appear on the public page.`}
       actions={
         <div className="flex items-center gap-2">
-          <StatusPill tone={dirtyCount > 0 ? "busy" : "idle"}>
+          <StatusPill tone={dirtyCount > 0 ? "busy" : "good"}>
             {dirtyCount > 0 ? `${dirtyCount} unsaved` : `${openCount} open`}
           </StatusPill>
           {dirtyCount > 0 && (
@@ -515,7 +516,7 @@ function AvailabilityPanel({
           return (
             <div key={day.date}>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-medium text-ink-50">{day.label}</h3>
+                <h3 className="text-sm font-semibold text-slate-900">{day.label}</h3>
                 <div className="flex gap-1.5">
                   <MiniButton
                     onClick={() =>
@@ -574,7 +575,7 @@ function AvailabilityPanel({
                       <div
                         key={slot.id}
                         title={`Your session runs ${prettyClock(SESSION.start)}–${prettyClock(SESSION.end)}`}
-                        className="rounded-lg border border-aurora-violet/25 bg-aurora-violet/10 px-1 py-2 text-center text-[11px] text-aurora-violet"
+                        className="rounded-lg border border-violet-200 bg-violet-50 px-1 py-2 text-center text-[11px] text-violet-700"
                       >
                         {prettyClock(slot.start)}
                         <span className="mt-0.5 block text-[9px] uppercase tracking-[0.12em]">
@@ -605,12 +606,12 @@ function AvailabilityPanel({
                       className={cn(
                         "rounded-lg border px-1 py-2 text-center text-[11px] tabular-nums transition",
                         booked
-                          ? "cursor-not-allowed border-aurora-gold/30 bg-aurora-gold/10 text-aurora-gold"
+                          ? "cursor-not-allowed border-amber-300 bg-amber-50 text-amber-800"
                           : isOpen
-                            ? "border-aurora-cyan/40 bg-aurora-cyan/15 text-white hover:bg-aurora-cyan/25"
-                            : "border-white/10 bg-white/[0.02] text-ink-500 hover:bg-white/[0.06]",
-                        slot.past && !booked && "opacity-40",
-                        isDirty && "ring-1 ring-aurora-gold/60",
+                            ? "border-cyan-700 bg-cyan-700 text-white hover:bg-cyan-800"
+                            : "border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100",
+                        slot.past && !booked && "opacity-45",
+                        isDirty && "ring-2 ring-amber-400 ring-offset-1",
                       )}
                     >
                       {prettyClock(slot.start)}
@@ -644,7 +645,7 @@ function MiniButton({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-ink-300 transition hover:bg-white/10 hover:text-white"
+      className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
     >
       {children}
     </button>
@@ -673,7 +674,7 @@ function BookingsPanel({
       }
     >
       {bookings.length === 0 ? (
-        <p className="py-6 text-center text-sm text-ink-400">Nothing booked yet.</p>
+        <p className="py-6 text-center text-sm text-slate-500">Nothing booked yet.</p>
       ) : (
         <ul className="divide-y divide-white/5">
           {bookings.map((booking) => {
@@ -681,29 +682,29 @@ function BookingsPanel({
             return (
               <li key={booking.id} className="flex items-start gap-3 py-3">
                 <div className="w-24 shrink-0">
-                  <p className="text-sm font-medium tabular-nums text-white">
+                  <p className="text-sm font-semibold tabular-nums text-slate-900">
                     {prettyClock(start)}
                   </p>
-                  <p className="text-[10px] uppercase tracking-[0.14em] text-ink-400">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
                     {date.slice(5).replace("-", "/")}
                   </p>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-ink-50">
+                  <p className="truncate text-sm text-slate-900">
                     {booking.name}
                     {booking.organization && (
-                      <span className="text-ink-400"> · {booking.organization}</span>
+                      <span className="text-slate-500"> · {booking.organization}</span>
                     )}
                   </p>
-                  <p className="truncate text-xs text-ink-400">{booking.email}</p>
+                  <p className="truncate text-xs text-slate-500">{booking.email}</p>
                   {booking.topic && (
-                    <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-ink-300">
+                    <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
                       {booking.topic}
                     </p>
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <code className="hidden font-mono text-[10px] tracking-[0.18em] text-ink-500 sm:inline">
+                  <code className="hidden font-mono text-[10px] tracking-[0.18em] text-slate-400 sm:inline">
                     {booking.code}
                   </code>
                   <ConfirmButton
@@ -722,9 +723,9 @@ function BookingsPanel({
 }
 
 const STANDING_TONE: Record<VolunteerStanding, string> = {
-  selected: "bg-aurora-cyan/15 text-aurora-cyan",
-  backup: "bg-aurora-gold/15 text-aurora-gold",
-  waitlist: "bg-white/5 text-ink-300",
+  selected: "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-200",
+  backup: "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
+  waitlist: "bg-slate-100 text-slate-600 ring-1 ring-slate-200",
 };
 
 function VolunteersPanel({
@@ -747,17 +748,17 @@ function VolunteersPanel({
       }
     >
       {volunteers.length === 0 ? (
-        <p className="py-6 text-center text-sm text-ink-400">Nobody yet.</p>
+        <p className="py-6 text-center text-sm text-slate-500">Nobody yet.</p>
       ) : (
         <ul className="divide-y divide-white/5">
           {volunteers.map((volunteer) => (
             <li key={volunteer.id} className="flex items-start gap-3 py-3">
-              <span className="w-6 shrink-0 text-sm tabular-nums text-ink-400">
+              <span className="w-6 shrink-0 text-sm tabular-nums text-slate-400">
                 {volunteer.position}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-2">
-                  <span className="truncate text-sm text-ink-50">{volunteer.name}</span>
+                  <span className="truncate text-sm font-medium text-slate-900">{volunteer.name}</span>
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em]",
@@ -767,13 +768,13 @@ function VolunteersPanel({
                     {volunteer.standing}
                   </span>
                 </p>
-                <p className="truncate text-xs text-ink-400">
+                <p className="truncate text-xs text-slate-500">
                   {volunteer.email}
                   {volunteer.phone && ` · ${volunteer.phone}`}
                   {volunteer.organization && ` · ${volunteer.organization}`}
                 </p>
                 {volunteer.note && (
-                  <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-ink-300">
+                  <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
                     {volunteer.note}
                   </p>
                 )}
@@ -817,35 +818,35 @@ function SurveyPanel({
           {scales.map((scale) => (
             <div
               key={scale.id}
-              className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
             >
-              <p className="text-2xl font-medium tabular-nums text-white">
+              <p className="text-2xl font-semibold tabular-nums text-slate-900">
                 {scale.average ?? "—"}
-                <span className="ml-1 text-xs font-normal text-ink-500">
+                <span className="ml-1 text-xs font-normal text-slate-400">
                   / {scale.max}
                 </span>
               </p>
-              <p className="mt-1 text-[11px] leading-snug text-ink-400">{scale.prompt}</p>
+              <p className="mt-1 text-[11px] leading-snug text-slate-500">{scale.prompt}</p>
             </div>
           ))}
         </div>
 
         {surveys.length === 0 ? (
-          <p className="py-4 text-center text-sm text-ink-400">No responses yet.</p>
+          <p className="py-4 text-center text-sm text-slate-500">No responses yet.</p>
         ) : (
           <ul className="space-y-3">
             {surveys.map((response) => (
               <li
                 key={response.id}
-                className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
               >
-                <p className="flex flex-wrap items-center gap-2 text-[11px] text-ink-400">
+                <p className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                   <span>{new Date(response.createdAt).toLocaleString()}</span>
-                  {response.name && <span className="text-ink-200">{response.name}</span>}
+                  {response.name && <span className="font-medium text-slate-700">{response.name}</span>}
                   {response.email && <span>{response.email}</span>}
                   {scales.map((scale) =>
                     typeof response.answers[scale.id] === "number" ? (
-                      <span key={scale.id} className="tabular-nums text-ink-300">
+                      <span key={scale.id} className="tabular-nums text-slate-600">
                         {scale.id}: {response.answers[scale.id]}
                       </span>
                     ) : null,
@@ -855,9 +856,9 @@ function SurveyPanel({
                   response.answers[question.id] ? (
                     <p
                       key={question.id}
-                      className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-100"
+                      className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-800"
                     >
-                      <span className="mr-1.5 text-[10px] uppercase tracking-[0.14em] text-ink-500">
+                      <span className="mr-1.5 text-[10px] uppercase tracking-[0.14em] text-slate-400">
                         {question.id}
                       </span>
                       {response.answers[question.id]}
@@ -912,8 +913,8 @@ function ConfirmButton({
       className={cn(
         "shrink-0 rounded-lg border px-2 py-1 text-[10px] uppercase tracking-[0.14em] transition",
         armed
-          ? "border-aurora-pink/40 bg-aurora-pink/15 text-aurora-pink"
-          : "border-white/10 bg-white/5 text-ink-400 hover:text-white",
+          ? "border-rose-300 bg-rose-50 text-rose-700"
+          : "border-slate-300 bg-white text-slate-500 hover:text-slate-900",
       )}
     >
       {armed ? (

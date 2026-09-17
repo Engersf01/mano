@@ -102,7 +102,7 @@ export async function GET(request: Request) {
   return new Response(csv(rows), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="kn-speaker-${kind}.csv"`,
+      "Content-Disposition": `attachment; filename="neumomeet-${kind}.csv"`,
       "Cache-Control": "no-store",
     },
   });

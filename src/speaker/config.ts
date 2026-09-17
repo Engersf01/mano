@@ -18,6 +18,17 @@ export const EVENT_DAYS = [
 ] as const;
 
 /**
+ * How long the opening video runs, in seconds.
+ *
+ * Drives the countdown on the hub, which starts on the viewer's play click.
+ * Keep it equal to the actual runtime of the video set in the host console:
+ * the number is a promise about how long the page is asking for, and a
+ * countdown that hits zero with a minute still to play breaks that promise in
+ * the one place someone was deciding whether to keep watching.
+ */
+export const VIDEO_COUNTDOWN_SECONDS = 90;
+
+/**
  * 20 minutes per slot.
  *
  * The 1:1s are advertised as 15–20 minutes, and the grid is cut at the long

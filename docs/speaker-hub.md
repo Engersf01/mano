@@ -1,4 +1,4 @@
-# Speaker hub
+# NeumoMeet speaker hub
 
 A public page for the **October 2–4, 2026** conference weekend: one video, and
 three things an audience can do after watching it.
@@ -20,20 +20,35 @@ three things an audience can do after watching it.
    Without it `/speaker/host` refuses to open — an empty passcode never means
    "everyone is the host".
 
-2. **The conference logo.** Save the artwork as:
+2. **The NeumoMeet logo.** Save the artwork as:
 
    ```
-   public/brand/kn-speaker.png
+   public/brand/neumomeet.png
    ```
 
    It appears in the header of all three routes. Until the file exists the
-   header falls back to type rather than showing a broken image.
+   header renders the NeumoMeet wordmark in type — a real lockup, not a
+   placeholder, so a missing file costs the page nothing but the artwork.
 
 3. **The video.** Open `/speaker/host` → *Page settings* → paste a YouTube,
    Vimeo, or direct `.mp4`/`.webm` link. `NEXT_PUBLIC_SPEAKER_VIDEO_URL` sets
    the starting value for a fresh deployment. Anything that isn't `http(s)` is
    discarded on save — this string ends up in a `src` on a page your audience
    loads.
+
+   The hub covers the player until the viewer presses **its** play button, and
+   starts a 90-second countdown from that click. Set
+   `VIDEO_COUNTDOWN_SECONDS` in `src/speaker/config.ts` if the video's runtime
+   changes: the number is a promise about how long the page is asking for, and
+   a countdown that hits zero with a minute still to play breaks that promise
+   exactly when someone is deciding whether to keep watching.
+
+   The countdown is driven by the video's own `currentTime` for a direct file,
+   so pausing pauses the clock. A YouTube or Vimeo iframe never reports a
+   pause to the page, so those run on wall time from the play click — which is
+   also why the cover exists: pressing play inside a cross-origin iframe is
+   invisible to us, and the hub's own button is the only moment the countdown
+   can honestly start from.
 
 4. **Storage.** See below. The short version: on Vercel, set `KV_REST_API_URL`
    and `KV_REST_API_TOKEN` before you share the public link.
@@ -147,3 +162,20 @@ Anything that should be changeable *during* the event — the video, the
 timezone, whether a section accepts new entries — is a stored setting in the
 host console instead, because editing a source file mid-conference is not a
 thing anyone should have to do.
+
+## Theming
+
+The hub is white; the rest of Mano is a dark kiosk. Two consequences worth
+knowing before editing:
+
+- `app/speaker/layout.tsx` injects a `<style>` that undoes `globals.css`'s
+  `overflow: hidden`, near-black body and `color-scheme: dark` for this route
+  subtree only. `color-scheme` is not cosmetic — it decides whether a native
+  checkbox, scrollbar or autofill highlight is drawn light or dark.
+- `src/ui/speaker/primitives.tsx` is a deliberate parallel of
+  `src/ui/avatar/primitives.tsx`, not a themed version of it. The kiosk's
+  controls are tuned for dark glass on a stage; threading a theme flag through
+  them to serve a public web page is how a presentation stage ends up washed
+  out at a conference. The project's `ink` and `aurora` scales belong to the
+  stage — on white they read as pastels, so the hub uses Tailwind's default
+  `slate` / `cyan` / `violet` ramps.
