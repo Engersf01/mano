@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, MessageSquareQuote, Users } from "lucide-react";
 import type { PublicState } from "@/speaker/types";
-import { BrandMark } from "@/ui/speaker/BrandMark";
+import { BrandLockup, BrandMark } from "@/ui/speaker/BrandMark";
 import { PageBackdrop } from "@/ui/speaker/primitives";
 import { SlotPicker } from "@/ui/speaker/SlotPicker";
 import { SurveyForm } from "@/ui/speaker/SurveyForm";
@@ -86,6 +86,9 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
 
       <div className="mx-auto max-w-4xl px-5">
         <section className="pt-10 sm:pt-14">
+          {/* The conference's own lockup leads the page. The header carries
+              only the compact mark, which cannot show the year or tagline. */}
+          <BrandLockup className="mb-7" />
           <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-700">
             2–4 de octubre · {state.settings.timeZoneLabel}
           </p>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { readData } from "@/server/speakerStore";
-import { BrandMark } from "@/ui/speaker/BrandMark";
+import { BrandLockup, BrandMark } from "@/ui/speaker/BrandMark";
 import { PageBackdrop } from "@/ui/speaker/primitives";
 import { SurveyForm } from "@/ui/speaker/SurveyForm";
 
@@ -31,6 +31,8 @@ export default async function SurveyPage() {
             Página principal
           </Link>
         </header>
+
+        <BrandLockup className="mt-4" />
 
         <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
           ¿Cómo fue nuestra conversación?
