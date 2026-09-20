@@ -54,6 +54,26 @@ const DEFAULT_OPEN_FROM = "09:00";
 const DEFAULT_OPEN_UNTIL = "17:00";
 
 /**
+ * Per-day exceptions to that window, keyed by date.
+ *
+ * One pair of times cannot describe the weekend, because the days are not the
+ * same shape: Friday only opens up in the afternoon. Keeping the exception here
+ * rather than widening `DEFAULT_OPEN_*` leaves Saturday and Sunday on the sane
+ * default, which is what makes each date's hours readable at a glance.
+ *
+ * This moves the *default* only. A host toggle stored against a specific slot
+ * still wins over anything here — see `isSlotOpen` — so changing a date after
+ * the host has opened or closed its slots by hand will not move those slots.
+ */
+const DAY_OPEN_WINDOWS: Record<string, { from: string; until: string }> = {
+  // Friday: nothing before 15:00, then straight through to 18:00.
+  "2026-10-02": { from: "15:00", until: "18:00" },
+};
+
+const openWindowFor = (date: string) =>
+  DAY_OPEN_WINDOWS[date] ?? { from: DEFAULT_OPEN_FROM, until: DEFAULT_OPEN_UNTIL };
+
+/**
  * The talk itself: volunteers come up during this block on Saturday, so it is
  * carved out of the 1:1 grid rather than left bookable. Being double-booked
  * against your own session is the one scheduling mistake this app exists to
@@ -257,6 +277,8 @@ export function buildGrid(): GridSlot[] {
   const gridEnd = toMinutes(GRID_END);
 
   for (const day of EVENT_DAYS) {
+    const open = openWindowFor(day.date);
+
     for (let at = toMinutes(GRID_START); at + SLOT_MINUTES <= gridEnd; at += SLOT_MINUTES) {
       const start = toClock(at);
       const end = toClock(at + SLOT_MINUTES);
@@ -275,8 +297,8 @@ export function buildGrid(): GridSlot[] {
         session,
         defaultOpen:
           !session &&
-          at >= toMinutes(DEFAULT_OPEN_FROM) &&
-          at + SLOT_MINUTES <= toMinutes(DEFAULT_OPEN_UNTIL),
+          at >= toMinutes(open.from) &&
+          at + SLOT_MINUTES <= toMinutes(open.until),
       });
     }
   }
