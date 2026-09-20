@@ -100,6 +100,7 @@ export async function GET(request: Request) {
     bookings: [...data.bookings].sort((a, b) => a.slotId.localeCompare(b.slotId)),
     volunteers,
     surveys: [...data.surveys].sort((a, b) => b.createdAt - a.createdAt),
+    virtualRequests: [...data.virtualRequests].sort((a, b) => a.createdAt - b.createdAt),
     scales,
     store: { kind: storeKind(), ephemeral: isEphemeral() },
   });
@@ -153,7 +154,7 @@ export async function POST(request: Request) {
       if ("timeZoneLabel" in submitted) {
         next.timeZoneLabel = text(submitted.timeZoneLabel, 12);
       }
-      for (const flag of ["bookingOpen", "volunteersOpen", "surveyOpen"] as const) {
+      for (const flag of ["bookingOpen", "volunteersOpen", "surveyOpen", "virtualOpen"] as const) {
         if (flag in submitted) next[flag] = submitted[flag] === true;
       }
       data.settings = next;

@@ -10,9 +10,9 @@ strings happen to be translated.
 
 | Route | Who it's for | What it does |
 |---|---|---|
-| `/speaker` | the audience | Video, then book a 1:1, volunteer, or leave feedback |
+| `/speaker` | the audience | Video, then book a 1:1, volunteer, ask for a video call, or leave feedback |
 | `/speaker/survey` | the audience | The same five questions, on their own — the link to hand out after a conversation |
-| `/speaker/host` | you | Availability, bookings, volunteer roster, survey results, CSV exports |
+| `/speaker/host` | you | Availability, bookings, volunteer roster, virtual requests, survey results, CSV exports |
 
 ## Setup
 
@@ -185,6 +185,30 @@ The public roster shows **first names only** — enough to make three-of-five
 filled visible, which is what gets the fourth person to sign up, without
 publishing a list of full names on a URL that gets pasted into a conference
 Slack.
+
+## Virtual sessions
+
+The weekend runs out of room before it runs out of interest — Sunday morning is
+spoken for and nothing runs after midday — so the fourth option is a video call
+in the week that follows. `VIRTUAL_DAYS` in `src/speaker/config.ts` holds the
+offered dates; `VIRTUAL_WINDOW_LABEL` is the phrase the page uses for the range,
+so the two never drift apart.
+
+Deliberately **not** a slot picker. Nothing is committed to a clock time: the
+person ticks the days that could work and the host arranges the call. Offering
+exact times for a week nobody has scheduled would be a promise the calendar
+cannot keep, and a second grid to keep open would be a second grid to forget.
+
+Days are validated against `VIRTUAL_DAY_IDS` by iterating the allow-list rather
+than the payload, so an unknown date, a repeat, or a thousand-element array
+cannot reach the store, and what is stored always comes back in calendar order.
+One request per email address; `virtualOpen` closes the form from the console.
+
+A day with nothing left on it links here, from `NoTimesLeft` in
+`src/ui/speaker/SlotPicker.tsx`. That covers two different days: one with no
+open slots at all, and one whose slots are all taken — the second is the case
+Sunday actually hits, and a grid of struck-through cells with no way out is the
+one thing this page cannot afford.
 
 ## Survey
 

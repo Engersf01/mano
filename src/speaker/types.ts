@@ -21,6 +21,8 @@ export type SpeakerSettings = {
   bookingOpen: boolean;
   volunteersOpen: boolean;
   surveyOpen: boolean;
+  /** Whether the post-conference virtual setup section accepts requests. */
+  virtualOpen: boolean;
 };
 
 export type Booking = {
@@ -66,6 +68,31 @@ export type Volunteer = {
   createdAt: number;
 };
 
+/**
+ * A request for a virtual setup in the week after the conference.
+ *
+ * No slot id: unlike a `Booking` this is not a committed time. `days` is the
+ * set of dates that would work for the person, and the host turns that into
+ * an actual call.
+ */
+export type VirtualRequest = {
+  id: string;
+  code: string;
+  name: string;
+  email: string;
+  phone: string;
+  /** Health centre or place of practice. */
+  organization: string;
+  /** `resident` or `specialist`, same ids as a booking. */
+  role: string;
+  /** Which specialty, when `role` is `specialist`. Empty otherwise. */
+  specialty: string;
+  /** Dates from `VIRTUAL_DAYS` that work for them. Never empty. */
+  days: string[];
+  note: string;
+  createdAt: number;
+};
+
 /** Where a volunteer stands, derived from sign-up order — never stored. */
 export type VolunteerStanding = "selected" | "backup" | "waitlist";
 
@@ -103,6 +130,7 @@ export type SpeakerData = {
   bookings: Booking[];
   volunteers: Volunteer[];
   surveys: SurveyResponse[];
+  virtualRequests: VirtualRequest[];
   /** Brute-force state for the admin PIN. Pruned as it is written. */
   adminAttempts: Record<string, AdminAttempt>;
 };
@@ -133,6 +161,8 @@ export type PublicState = {
     spotsLeft: number;
   };
   surveyCount: number;
+  /** How many have asked for a virtual setup. A count only — never the people. */
+  virtualCount: number;
   /**
    * Whether a usable admin PIN is configured. The floating admin button is not
    * rendered without one: an entry point to a door with no lock fitted is worse
@@ -168,9 +198,23 @@ export type AdminVolunteerRow = {
   code: string;
 };
 
+export type AdminVirtualRow = {
+  name: string;
+  email: string;
+  phone: string;
+  organization: string;
+  /** Already turned into labels; the panel does no lookups. */
+  role: string;
+  specialty: string;
+  days: string[];
+  note: string;
+  code: string;
+};
+
 /** What the admin PIN buys: who signed up, and how to reach them. */
 export type AdminRoster = {
   bookings: AdminBookingRow[];
   volunteers: AdminVolunteerRow[];
+  virtual: AdminVirtualRow[];
   surveyCount: number;
 };

@@ -1,15 +1,16 @@
 "use client";
 /**
- * The hub: one video, three things to do.
+ * The hub: one video, four things to do.
  *
  * Ordered the way the ask is made from the stage — watch this, then book time
- * with me, volunteer for Saturday, or tell me how it went. Each section is an
- * anchor so a slide can point at `#book` directly and land someone on the
- * right one.
+ * with me, volunteer for Saturday, take a video call the week after if the
+ * weekend is full, or tell me how it went. Each section is an anchor so a
+ * slide can point at `#book` directly and land someone on the right one.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CalendarClock, MessageSquareQuote, Users } from "lucide-react";
+import { CalendarClock, MessageSquareQuote, Users, Video } from "lucide-react";
+import { VIRTUAL_WINDOW_LABEL } from "@/speaker/config";
 import type { PublicState } from "@/speaker/types";
 import { AdminDock } from "@/ui/speaker/AdminDock";
 import { BrandLockup, BrandMark } from "@/ui/speaker/BrandMark";
@@ -17,6 +18,7 @@ import { PageBackdrop } from "@/ui/speaker/primitives";
 import { SlotPicker } from "@/ui/speaker/SlotPicker";
 import { SurveyForm } from "@/ui/speaker/SurveyForm";
 import { VideoStage } from "@/ui/speaker/VideoStage";
+import { VirtualSetup } from "@/ui/speaker/VirtualSetup";
 import { VolunteerSignup } from "@/ui/speaker/VolunteerSignup";
 
 /**
@@ -31,6 +33,7 @@ const POLL_MS = 45_000;
 const SECTIONS = [
   { id: "book", label: "Reservar un 1:1", Icon: CalendarClock },
   { id: "volunteer", label: "Ser voluntario", Icon: Users },
+  { id: "virtual", label: "Sesión virtual", Icon: Video },
   { id: "feedback", label: "Comentarios", Icon: MessageSquareQuote },
 ];
 
@@ -102,7 +105,8 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
           <p className="mt-4 max-w-2xl text-balance text-base leading-relaxed text-slate-600">
             Minuto y medio de video y luego elige la opción que te corresponda:
             reserva 15–20 minutos conmigo durante el fin de semana, súbete al escenario
-            durante la sesión del sábado, o cuéntame cómo fue nuestra conversación.
+            durante la sesión del sábado, pide una sesión por video para la semana
+            siguiente, o cuéntame cómo fue nuestra conversación.
           </p>
 
           <div className="mt-8">
@@ -118,7 +122,7 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
 
           {/* Jump targets, on mobile too — the header nav is hidden there and
               these three cards are the whole point of the page. */}
-          <div ref={actions} className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div ref={actions} className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {SECTIONS.map((section) => (
               <a
                 key={section.id}
@@ -153,8 +157,17 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
         </Section>
 
         <Section
-          id="feedback"
+          id="virtual"
           eyebrow="Opción tres"
+          title="¿No te sirve ninguna hora? Hablemos por video"
+          blurb={`Si el fin de semana se te llenó, montamos la sesión por videollamada ${VIRTUAL_WINDOW_LABEL}. Marca los días que te sirvan y yo te propongo una hora.`}
+        >
+          <VirtualSetup state={state} onChanged={refresh} />
+        </Section>
+
+        <Section
+          id="feedback"
+          eyebrow="Opción cuatro"
           title="Cuéntame cómo fue"
           blurb="Cinco preguntas, alrededor de un minuto. Mejor justo después de que hablemos el 3 de octubre, cuando todavía esté fresco."
         >

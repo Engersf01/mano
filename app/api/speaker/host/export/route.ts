@@ -1,4 +1,4 @@
-import { SURVEY_QUESTIONS, interestLabel, roleLabel } from "@/speaker/config";
+import { SURVEY_QUESTIONS, interestLabel, roleLabel, virtualDayLabel } from "@/speaker/config";
 import { orderedVolunteers, standingAt } from "@/speaker/derive";
 import { authorizeHost } from "@/server/speakerAuth";
 import { readData } from "@/server/speakerStore";
@@ -105,6 +105,36 @@ export async function GET(request: Request) {
         volunteer.code,
         stamp(volunteer.createdAt),
       ]),
+    ];
+  } else if (kind === "virtual") {
+    rows = [
+      [
+        "Nombre",
+        "Correo",
+        "Teléfono",
+        "Centro o lugar de práctica",
+        "Residente o especialista",
+        "Especialidad",
+        "Días que le sirven",
+        "Nota",
+        "Código",
+        "Solicitado el",
+      ],
+      ...[...data.virtualRequests]
+        .sort((a, b) => a.createdAt - b.createdAt)
+        .map((entry) => [
+          entry.name,
+          entry.email,
+          entry.phone,
+          entry.organization,
+          roleLabel(entry.role),
+          entry.specialty,
+          // One cell, so the sheet stays one row per person.
+          entry.days.map(virtualDayLabel).join(" · "),
+          entry.note,
+          entry.code,
+          stamp(entry.createdAt),
+        ]),
     ];
   } else if (kind === "survey") {
     rows = [

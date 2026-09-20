@@ -116,6 +116,41 @@ const HELD_WINDOWS: Record<string, { from: string; until: string }[]> = {
 };
 
 /**
+ * The follow-up window: a virtual setup session after the conference.
+ *
+ * Sunday is the last day and its morning is already spoken for, so the hub
+ * would otherwise end on "nothing available" for anyone who did not get a
+ * slot. This is where those people go instead.
+ *
+ * Deliberately *not* part of the 1:1 grid. These are not 20-minute windows on
+ * a wall clock — nothing is committed to a time yet. Someone marks the days
+ * that could work and the host arranges the call, which is the honest shape
+ * for a session that has not been scheduled.
+ */
+export const VIRTUAL_DAYS = [
+  { date: "2026-10-12", label: "lunes 12 de octubre", short: "lun 12/10" },
+  { date: "2026-10-13", label: "martes 13 de octubre", short: "mar 13/10" },
+  { date: "2026-10-14", label: "miércoles 14 de octubre", short: "mié 14/10" },
+  { date: "2026-10-15", label: "jueves 15 de octubre", short: "jue 15/10" },
+  { date: "2026-10-16", label: "viernes 16 de octubre", short: "vie 16/10" },
+  { date: "2026-10-17", label: "sábado 17 de octubre", short: "sáb 17/10" },
+  { date: "2026-10-18", label: "domingo 18 de octubre", short: "dom 18/10" },
+  { date: "2026-10-19", label: "lunes 19 de octubre", short: "lun 19/10" },
+  { date: "2026-10-20", label: "martes 20 de octubre", short: "mar 20/10" },
+] as const;
+
+/** Everything `/api/speaker/virtual` will accept in `days`. */
+export const VIRTUAL_DAY_IDS: string[] = VIRTUAL_DAYS.map((day) => day.date);
+
+/** How the window is described in prose, in one place. */
+export const VIRTUAL_WINDOW_LABEL = "del 12 al 20 de octubre";
+
+/** Label for one stored virtual day, for the console and the CSV. */
+export function virtualDayLabel(date: string) {
+  return VIRTUAL_DAYS.find((day) => day.date === date)?.label ?? date;
+}
+
+/**
  * The talk itself: volunteers come up during this block on Saturday, so it is
  * carved out of the 1:1 grid rather than left bookable. Being double-booked
  * against your own session is the one scheduling mistake this app exists to
@@ -339,6 +374,7 @@ export const DEFAULT_SETTINGS: SpeakerSettings = {
   bookingOpen: true,
   volunteersOpen: true,
   surveyOpen: true,
+  virtualOpen: true,
 };
 
 const toMinutes = (clock: string) => {

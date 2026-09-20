@@ -24,9 +24,11 @@ import {
   SESSION,
   SLOT_MINUTES,
   SURVEY_QUESTIONS,
+  VIRTUAL_WINDOW_LABEL,
   interestLabel,
   prettyClock,
   roleLabel,
+  virtualDayLabel,
 } from "@/speaker/config";
 import { VOLUNTEER_LIMITS } from "@/speaker/derive";
 import { PASSCODE_HEADER } from "@/speaker/protocol";
@@ -34,6 +36,7 @@ import type {
   Booking,
   SpeakerSettings,
   SurveyResponse,
+  VirtualRequest,
   Volunteer,
   VolunteerStanding,
 } from "@/speaker/types";
@@ -75,6 +78,7 @@ type HostPayload = {
   bookings: Booking[];
   volunteers: (Volunteer & { standing: VolunteerStanding; position: number })[];
   surveys: SurveyResponse[];
+  virtualRequests: VirtualRequest[];
   scales: {
     id: string;
     prompt: string;
@@ -179,7 +183,7 @@ export default function HostClient() {
    * instead would leave it in browser history and in any proxy's logs.
    */
   const download = useCallback(
-    async (kind: "bookings" | "volunteers" | "survey") => {
+    async (kind: "bookings" | "volunteers" | "virtual" | "survey") => {
       if (!passcode) return;
       setError(null);
       try {
@@ -312,6 +316,11 @@ export default function HostClient() {
               volunteers={data.volunteers}
               onRemove={(id) => post({ action: "delete-volunteer", id })}
               onExport={() => void download("volunteers")}
+            />
+
+            <VirtualPanel
+              requests={data.virtualRequests}
+              onExport={() => void download("virtual")}
             />
 
             <SurveyPanel
@@ -823,6 +832,70 @@ const STANDING_TONE: Record<VolunteerStanding, string> = {
   backup: "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
   waitlist: "bg-slate-100 text-slate-600 ring-1 ring-slate-200",
 };
+
+/** Who wants a video call the week after, and which days they can do. */
+function VirtualPanel({
+  requests,
+  onExport,
+}: {
+  requests: VirtualRequest[];
+  onExport: () => void;
+}) {
+  return (
+    <Panel
+      title={`Sesiones virtuales · ${requests.length}`}
+      subtitle={`Pedidas para ${VIRTUAL_WINDOW_LABEL}. Nadie tiene hora todavía — los días son los que le sirven a cada quien.`}
+      actions={
+        <Button onClick={onExport} disabled={requests.length === 0}>
+          <Download size={14} /> CSV
+        </Button>
+      }
+    >
+      {requests.length === 0 ? (
+        <p className="py-6 text-center text-sm text-slate-500">Todavía nadie.</p>
+      ) : (
+        <ul className="space-y-3">
+          {requests.map((entry) => (
+            <li
+              key={entry.id}
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
+            >
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-sm font-medium text-slate-900">
+                  {entry.name}
+                  {entry.organization && (
+                    <span className="font-normal text-slate-500"> · {entry.organization}</span>
+                  )}
+                </p>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">
+                  {entry.code}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                {entry.email}
+                {entry.phone && ` · ${entry.phone}`}
+              </p>
+              {entry.role && (
+                <p className="text-xs text-slate-500">
+                  {roleLabel(entry.role)}
+                  {entry.specialty && ` · ${entry.specialty}`}
+                </p>
+              )}
+              <p className="mt-1.5 text-xs text-slate-700">
+                {entry.days.map(virtualDayLabel).join(" · ")}
+              </p>
+              {entry.note && (
+                <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+                  {entry.note}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
 
 function VolunteersPanel({
   volunteers,
