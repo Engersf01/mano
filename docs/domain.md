@@ -40,32 +40,33 @@ Vercel will then show the DNS record it expects. Take the value from that
 screen rather than from here if the two disagree: some projects are given a
 per-account target instead of the shared one.
 
-One thing to check on that screen: the live deployment is currently a *branch*
-URL (`mano-git-main-…`), which means `main` may not be set as the Production
-branch. If the domain page offers to attach the domain to a git branch, attach
-it to `main`. Otherwise set **Settings → Git → Production Branch** to `main`
-first, so the domain and the deployment everyone is already using are the same
-thing.
+Connect it to the **Production** environment. Production is built from `main`
+and the project's production URL is `mano-nu-eight.vercel.app` — verified
+2026-09-20 by checking that production serves the canonical this repo sets. So
+the domain and the branch this repo merges into are the same thing, and nothing
+needs changing under **Settings → Git**.
 
-### 2. The `engers.me` registrar — create the DNS record
+Until the DNS record below exists, Vercel will show the domain as **Invalid
+Configuration**. That is expected, not an error to chase — and the warning is
+where Vercel prints the exact record it wants.
 
-At whoever holds DNS for `engers.me`, add:
+### 2. Wix — create the DNS record
+
+DNS for `engers.me` is at **Wix** (see below for why that matters). In the Wix
+dashboard: **Domains → engers.me → Advanced → Edit DNS → CNAME → Add Record**.
 
 | Field | Value |
 |---|---|
 | Type | `CNAME` |
 | Name / Host | `meet` (some panels want the full `meet.engers.me`) |
-| Value / Target | `cname.vercel-dns.com` |
+| Value / Target | whatever Vercel displays — this account is issued a per-account target, currently `1c2d56281bf24177.vercel-dns-016.com`, not the shared `cname.vercel-dns.com` |
 | TTL | the default, or 3600 |
-| Proxy (Cloudflare only) | **off** — DNS only, grey cloud |
+| Proxy (Cloudflare only) | not applicable; this zone is at Wix, see below |
 
 A `CNAME` is correct here because this is a subdomain, not the apex; no `A`
 record and no IP address is involved. If the registrar's panel adds the zone
 name for you, entering `meet.engers.me` as the host can produce
 `meet.engers.me.engers.me` — enter just `meet` in that case.
-
-Cloudflare's orange-cloud proxy has to stay off: it terminates TLS itself, and
-Vercel then cannot complete the certificate challenge.
 
 ### 3. Afterwards
 
@@ -76,11 +77,76 @@ Vercel then cannot complete the certificate challenge.
 - Update the repository's **homepage** field on GitHub to
   `https://meet.engers.me` — it is the only place the live URL is recorded.
 
+## Where this zone actually lives
+
+Checked 2026-09-20, and worth knowing before anyone reaches for a CLI:
+
+- **DNS for `engers.me` is hosted at Wix** — the nameservers are `ns4.wixdns.net`
+  and `ns5.wixdns.net`. Vercel's CLI and API can only write records for domains
+  using Vercel's own nameservers, so a record added through them would sit in the
+  Vercel dashboard and never resolve. While Wix is authoritative, the Wix DNS
+  editor is the only place a new record can be made.
+- **The registrar is Tucows**, which is who Wix resells through. Registered
+  2025-02-09, expires 2027-02-09.
+- The domain carries `clientTransferProhibited` and `clientUpdateProhibited`
+  registry locks. Wix lifts these from inside its own flows; they matter if a
+  registrar transfer is ever attempted.
+- Engers' Vercel account issues **per-account CNAME targets**, not the shared
+  `cname.vercel-dns.com`. The existing `www` record points at
+  `1c2d56281bf24177.vercel-dns-016.com`. Always use whatever the Vercel domain
+  screen displays.
+
+### The whole zone
+
+It is very small, which is the main reason moving it is low-risk:
+
+| Name | Type | Value |
+|---|---|---|
+| `engers.me` | A | `216.150.1.1`, `216.150.16.1` (Vercel) |
+| `www.engers.me` | CNAME | `1c2d56281bf24177.vercel-dns-016.com` |
+
+No MX, no SPF/DMARC/DKIM, no apex TXT — **no email runs on this domain**, which is
+normally the thing that breaks in a nameserver migration. A sweep of 27 common
+subdomain names found nothing else. That sweep is a guess-list, not a zone
+transfer, so the Wix DNS panel remains the authoritative inventory: read it before
+migrating.
+
+The apex and `www` serve a *different* Vercel project from this one. Nothing here
+should disturb them.
+
+## Moving DNS to Vercel
+
+The goal is managing every record from Vercel. That is a **nameserver change**,
+not a registrar transfer — the registration can stay at Wix. Transferring the
+registration as well is a separate, optional step, and it needs the two registry
+locks above lifted first.
+
+Do it as a migration, not a switch: get the records into Vercel *before* changing
+the nameservers, so that whichever side a resolver is still caching, it gets the
+same answer.
+
+1. In Vercel, add `engers.me` to the account (**Domains → Add**), choosing the
+   option for a domain whose nameservers are elsewhere.
+2. Recreate the zone above in Vercel's DNS, and assign each name to the project
+   that serves it: the apex and `www` to the project already behind them, and
+   `meet` to this one. For names assigned to a project, Vercel maintains the
+   records itself.
+3. Only then, at Wix, change the nameservers to the pair Vercel shows
+   (`ns1.vercel-dns.com` / `ns2.vercel-dns.com`). If Wix refuses, the
+   `clientUpdateProhibited` lock is why.
+4. Wait for propagation — usually well under an hour, up to 48 in the worst case —
+   and confirm `engers.me`, `www.engers.me` and `meet.engers.me` all still resolve
+   and serve. Certificates re-issue on their own.
+
+Rolling back is pointing the nameservers back at `ns4`/`ns5.wixdns.net`, so long
+as the Wix zone has not been deleted in the meantime. Leave it in place.
+
 ## If it does not work
 
-- **"Invalid Configuration" in Vercel** — the `CNAME` has not propagated yet,
-  or the host ended up as `meet.engers.me.engers.me`. Check with
-  `dig +short meet.engers.me`; it should return a `vercel-dns.com` name.
+- **"Invalid Configuration" in Vercel** — normal until the `CNAME` exists and
+  propagates. After that, the usual cause is the host ending up as
+  `meet.engers.me.engers.me`. Check with `dig +short meet.engers.me`; it should
+  return a `vercel-dns.com` name.
 - **The domain loads the Mano stage, not the hub** — the rewrite matches the
   `Host` header exactly. If the domain chosen differs from `meet.engers.me`,
   set `NEXT_PUBLIC_SITE_HOST` in the Vercel project's environment variables and
