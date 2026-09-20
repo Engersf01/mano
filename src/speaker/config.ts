@@ -140,6 +140,64 @@ export const VOLUNTEER_REQUIREMENTS = [
   },
 ] as const;
 
+/**
+ * Resident or specialist, and which specialty.
+ *
+ * The audience is clinicians, and the two cases want different conversations —
+ * a resident is asking about their training years, a pulmonologist about their
+ * clinic. Two options rather than a free-text job title: this is filled in on a
+ * phone between sessions, and a tap beats typing.
+ *
+ * Ids stay English because they are storage keys, the same rule the survey
+ * questions follow; only the labels are the language of the page.
+ */
+export const DOCTOR_ROLES = [
+  { id: "resident" as const, label: "Residente" },
+  { id: "specialist" as const, label: "Especialista" },
+];
+
+export type DoctorRole = (typeof DOCTOR_ROLES)[number]["id"];
+
+/**
+ * What the person wants out of the 1:1, as outcomes rather than topics.
+ *
+ * This replaced a free-text "what would you like to discuss?", which asked
+ * someone to compose a sentence about a product they have not seen yet. Named
+ * benefits are answerable in a tap, and they arrive comparable across people,
+ * so the roster can be read as a demand signal instead of thirty paragraphs.
+ */
+export const BOOKING_INTERESTS = [
+  { id: "ai-first" as const, label: "Tener un sistema AI-First que apoye mi práctica" },
+  { id: "efficiency" as const, label: "Más eficiencia y efectividad en mi práctica" },
+  { id: "automation" as const, label: "Automatizar operaciones y procesos clínicos" },
+  { id: "engagement" as const, label: "Aumentar la participación de mis pacientes" },
+  { id: "volume" as const, label: "Aumentar la cantidad de pacientes" },
+];
+
+/**
+ * "Something else", which is a selectable answer and also the one that opens a
+ * text box. Kept out of `BOOKING_INTERESTS` because it behaves differently in
+ * every place that renders the list.
+ */
+export const INTEREST_OTHER = "other";
+
+/** Everything the booking endpoint will accept in `interests`. */
+export const BOOKING_INTEREST_IDS: string[] = [
+  ...BOOKING_INTERESTS.map((interest) => interest.id),
+  INTEREST_OTHER,
+];
+
+/** Label for one stored interest id, for the console and the CSV. */
+export function interestLabel(id: string) {
+  if (id === INTEREST_OTHER) return "Otro";
+  return BOOKING_INTERESTS.find((interest) => interest.id === id)?.label ?? id;
+}
+
+/** Label for a stored role id. Empty for bookings taken before it was asked. */
+export function roleLabel(id: string) {
+  return DOCTOR_ROLES.find((role) => role.id === id)?.label ?? "";
+}
+
 export type ScaleQuestion = {
   id: string;
   kind: "scale";

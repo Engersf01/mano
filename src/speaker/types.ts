@@ -30,8 +30,19 @@ export type Booking = {
   slotId: string;
   name: string;
   email: string;
+  /** Health centre or place of practice. */
   organization: string;
-  /** What they want out of the 15–20 minutes. */
+  /** `resident` or `specialist`. Empty on bookings taken before it was asked. */
+  role: string;
+  /** Which specialty, when `role` is `specialist`. Empty otherwise. */
+  specialty: string;
+  /** Ids from `BOOKING_INTERESTS`, plus `other`. */
+  interests: string[];
+  /**
+   * Free text. Once the outcome checkboxes replaced the open question this
+   * became the detail behind an `other` interest — and, on bookings older than
+   * that change, the whole of what someone wrote.
+   */
   topic: string;
   createdAt: number;
 };

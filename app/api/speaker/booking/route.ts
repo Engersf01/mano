@@ -1,7 +1,20 @@
 import { NextResponse } from "next/server";
-import { buildGrid, eventNow } from "@/speaker/config";
+import {
+  BOOKING_INTEREST_IDS,
+  DOCTOR_ROLES,
+  INTEREST_OTHER,
+  buildGrid,
+  eventNow,
+} from "@/speaker/config";
 import { isSlotOpen } from "@/speaker/derive";
-import { LIMITS, email as parseEmail, jsonBody, text } from "@/server/speakerInput";
+import {
+  LIMITS,
+  choice,
+  choices,
+  email as parseEmail,
+  jsonBody,
+  text,
+} from "@/server/speakerInput";
 import { mutate, newCode, newId } from "@/server/speakerStore";
 import type { Booking } from "@/speaker/types";
 
@@ -25,12 +38,20 @@ export async function POST(request: Request) {
   const name = text(body.name, LIMITS.name);
   const email = parseEmail(body.email);
   const organization = text(body.organization, LIMITS.organization);
+  const role = choice(body.role, DOCTOR_ROLES.map((entry) => entry.id));
+  const specialty = text(body.specialty, LIMITS.specialty);
+  const interests = choices(body.interests, BOOKING_INTEREST_IDS);
   const topic = text(body.topic, LIMITS.topic, { multiline: true });
   const slotId = text(body.slotId, 40);
 
   if (!name) return bad("Añade tu nombre, por favor.");
   if (!email) return bad("Añade un correo al que pueda enviarte la invitación.");
   if (!slotId) return bad("Elige una hora, por favor.");
+  if (!role) return bad("Dime si eres residente o especialista.");
+  // Only asked of specialists, so only required of them — a resident who picks
+  // the other option must not be stopped by a field their answer hid.
+  if (role === "specialist" && !specialty) return bad("¿Cuál es tu especialidad?");
+  if (interests.length === 0) return bad("Elige al menos una opción que te interese.");
 
   const slot = buildGrid().find((entry) => entry.id === slotId);
   if (!slot || slot.session) return bad("Esa hora no es una de las franjas de 1:1.");
@@ -76,7 +97,13 @@ export async function POST(request: Request) {
       name,
       email,
       organization,
-      topic,
+      role,
+      // Dropped rather than stored for a resident: the form hides the input
+      // once they switch, so a value here could only be a stale keystroke.
+      specialty: role === "specialist" ? specialty : "",
+      interests,
+      // Same reasoning — the detail box belongs to the "other" checkbox.
+      topic: interests.includes(INTEREST_OTHER) ? topic : "",
       createdAt: Date.now(),
     };
     data.bookings.push(booking);

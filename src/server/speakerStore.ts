@@ -20,7 +20,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { DEFAULT_SETTINGS } from "@/speaker/config";
-import type { SpeakerData } from "@/speaker/types";
+import type { Booking, SpeakerData } from "@/speaker/types";
 
 const KEY = "mano:speaker:v1";
 const LOCK_KEY = `${KEY}:lock`;
@@ -61,6 +61,26 @@ export function emptyData(): SpeakerData {
 }
 
 /**
+ * A booking written before the practice questions existed.
+ *
+ * `hydrate` fills the settings back in for the same reason, and bookings need
+ * it more: the console and the CSV read these fields directly, and a stored row
+ * from an earlier deploy would otherwise hand them `undefined` where the type
+ * promises a string. Normalising on the way out of the store means every reader
+ * can trust the shape without each one re-checking it.
+ */
+function hydrateBooking(raw: Booking): Booking {
+  return {
+    ...raw,
+    organization: raw.organization ?? "",
+    role: raw.role ?? "",
+    specialty: raw.specialty ?? "",
+    interests: Array.isArray(raw.interests) ? raw.interests : [],
+    topic: raw.topic ?? "",
+  };
+}
+
+/**
  * Fills in anything a stored document is missing.
  *
  * Deployments get upgraded mid-event, and a settings field added after the
@@ -75,7 +95,7 @@ function hydrate(raw: unknown): SpeakerData {
     version: 1,
     settings: { ...base.settings, ...(doc.settings ?? {}) },
     availability: { ...(doc.availability ?? {}) },
-    bookings: Array.isArray(doc.bookings) ? doc.bookings : [],
+    bookings: Array.isArray(doc.bookings) ? doc.bookings.map(hydrateBooking) : [],
     volunteers: Array.isArray(doc.volunteers) ? doc.volunteers : [],
     surveys: Array.isArray(doc.surveys) ? doc.surveys : [],
   };

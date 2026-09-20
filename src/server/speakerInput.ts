@@ -13,6 +13,7 @@ export const LIMITS = {
   email: 160,
   phone: 40,
   organization: 120,
+  specialty: 80,
   topic: 600,
   note: 600,
   answer: 1200,
@@ -39,6 +40,24 @@ export function email(value: unknown) {
 
 export function boolean(value: unknown) {
   return value === true;
+}
+
+/** One of `allowed`, or "" — never the caller's string echoed back. */
+export function choice(value: unknown, allowed: readonly string[]) {
+  return typeof value === "string" && allowed.includes(value) ? value : "";
+}
+
+/**
+ * The subset of `allowed` that was actually sent, de-duplicated and in the
+ * order `allowed` declares.
+ *
+ * Driving the result from the allow-list rather than the payload is what keeps
+ * an unknown id, a repeat, or a thousand-element array from reaching the store.
+ */
+export function choices(value: unknown, allowed: readonly string[]) {
+  if (!Array.isArray(value)) return [];
+  const sent = new Set(value.filter((entry): entry is string => typeof entry === "string"));
+  return allowed.filter((id) => sent.has(id));
 }
 
 /** A whole number inside a closed range, or null if it isn't one. */
