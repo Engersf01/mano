@@ -1,10 +1,32 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { socialPreview } from "@/lib/brand";
+
+const TITLE = "NeumoMeet · Mira, reserva, participa";
+const DESCRIPTION =
+  "Mira el resumen de la sesión, reserva un 1:1 de 15–20 minutos durante el fin de semana del 2 al 4 de octubre, apúntate como voluntario para la sesión del 3 de octubre, o deja tus comentarios.";
 
 export const metadata: Metadata = {
-  title: "NeumoMeet · Mira, reserva, participa",
-  description:
-    "Mira el resumen de la sesión, reserva un 1:1 de 15–20 minutos durante el fin de semana del 2 al 4 de octubre, apúntate como voluntario para la sesión del 3 de octubre, o deja tus comentarios.",
+  title: TITLE,
+  description: DESCRIPTION,
+  // Repeated rather than inherited: Next replaces a parent's `openGraph`
+  // wholesale when a route declares one, so leaving the image out here would
+  // strip the preview card off the very page that gets shared from a slide.
+  // Icons are a separate field and do carry over from the root layout.
+  openGraph: {
+    type: "website",
+    siteName: "NeumoMeet 2026",
+    locale: "es_ES",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [socialPreview],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [socialPreview],
+  },
 };
 
 /**
