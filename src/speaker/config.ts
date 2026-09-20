@@ -25,8 +25,11 @@ export const EVENT_DAYS = [
  * the number is a promise about how long the page is asking for, and a
  * countdown that hits zero with a minute still to play breaks that promise in
  * the one place someone was deciding whether to keep watching.
+ *
+ * Rounded up from the file's real 95.5s, so the countdown never runs out from
+ * under the video. Re-measure this whenever the cut changes.
  */
-export const VIDEO_COUNTDOWN_SECONDS = 90;
+export const VIDEO_COUNTDOWN_SECONDS = 96;
 
 /**
  * 20 minutes per slot.
@@ -321,6 +324,10 @@ export const SURVEY_QUESTIONS: SurveyQuestion[] = [
  * Runtime is 91.7s, so the 90-second countdown reaches zero a beat before the
  * last frame rather than after it.
  */
+// The "90s" in the filename is historical — the current cut is 95.5s. The path
+// is kept as it is because the video URL is a *stored* setting: a deployment
+// that has saved it once points at this exact path, and renaming the file
+// would leave that deployment with a broken player.
 const SESSION_VIDEO = "/media/neumomeet-90s.mp4";
 
 export const DEFAULT_SETTINGS: SpeakerSettings = {
