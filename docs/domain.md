@@ -8,6 +8,11 @@ characters and cannot be dictated out loud at all.
 `meet.engers.me` is 14 characters, says what the page is for, and needs no
 path: on that hostname `/` serves the hub.
 
+**Live since 2026-09-20.** The record that did it is a CNAME at Wix, `meet` →
+`9287b79862646fe3.vercel-dns-016.com`, with the domain attached to this
+project's Production environment. The two manual steps below are kept as the
+record of how it was done, and as the procedure for any future subdomain.
+
 ## What the repo already does
 
 - `next.config.mjs` rewrites `/` to `/speaker` when the request's `Host` is the
@@ -22,9 +27,9 @@ path: on that hostname `/` serves the hub.
   `NEXT_PUBLIC_SITE_HOST` / `NEXT_PUBLIC_SITE_URL`. Changing the domain later
   is one environment variable, not a code change.
 
-## What has to be done by hand, once
+## What had to be done by hand
 
-These two steps touch accounts the repo has no access to, and have to happen in
+These two steps touch accounts the repo has no access to, and had to happen in
 this order — Vercel will not issue the certificate until the DNS record
 resolves.
 
@@ -70,12 +75,20 @@ name for you, entering `meet.engers.me` as the host can produce
 
 ### 3. Afterwards
 
-- Vercel issues the certificate automatically, usually within a few minutes of
-  the record propagating. The domain reads **Valid Configuration** when done.
-- Check `https://meet.engers.me` lands on the hub, and that
-  `https://meet.engers.me/speaker/host` still opens the console.
-- Update the repository's **homepage** field on GitHub to
-  `https://meet.engers.me` — it is the only place the live URL is recorded.
+Vercel issued the certificate about a minute after the record began resolving.
+Verified 2026-09-20:
+
+| Check | Result |
+|---|---|
+| `https://meet.engers.me/` | the hub |
+| `http://meet.engers.me/` | `308` to HTTPS |
+| `/speaker/host`, `/speaker/survey` | `200` |
+| `/speaker` | still reachable directly |
+| `engers.me`, `www.engers.me` | unaffected |
+| `mano-nu-eight.vercel.app/` | still the Mano stage |
+
+Still outstanding: the repository's **homepage** field on GitHub still holds the
+old `vercel.app` URL, and nothing in the repo can change it.
 
 ## Where this zone actually lives
 
