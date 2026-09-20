@@ -106,6 +106,31 @@ A file store on a serverless platform would hand every instance its own empty
 `/tmp` and silently lose sign-ups, so the host console detects that combination
 and says so in a banner rather than looking like it works.
 
+### Setting up the store on Vercel
+
+Vercel KV no longer exists as a product; it became Upstash Redis in December
+2024. The integration injects `KV_REST_API_URL` and `KV_REST_API_TOKEN` under
+exactly those names, which is what `speakerStore.ts` already reads, so this is
+configuration only — no code change.
+
+1. Vercel dashboard → **Integrations** in the sidebar → **Browse Marketplace**.
+2. Choose **Upstash**, then **Install**. Pick a region near the event and the
+   smallest plan; the whole document is a few kilobytes of JSON.
+3. Name the database and select **Create**.
+4. Open the resource's **Projects** tab, connect the `mano` project, and leave
+   Production, Preview and Development selected.
+5. **Redeploy.** Vercel's own wording: "Existing deployments do not get new or
+   changed variables. Create a new deployment after you change a resource
+   connection." Until then the running build still has no store.
+
+The banner in the host console disappears once the new deployment is live.
+
+**Switching backends does not migrate anything.** The file store and KV are
+different places, and nothing copies one into the other. If sign-ups have
+already come in, export them from the console first — the CSV buttons on the
+bookings, volunteers and survey panels — because they will not be in the new
+store.
+
 ## 1:1 slots
 
 The grid runs **08:00–20:00 on all three days in 20-minute slots**, and the
