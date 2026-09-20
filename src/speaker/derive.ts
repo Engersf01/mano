@@ -10,6 +10,7 @@ import {
   SESSION,
   interestLabel,
   roleLabel,
+  virtualDayLabel,
   VOLUNTEERS_BACKUP,
   VOLUNTEERS_SELECTED,
   VOLUNTEER_CAPACITY,
@@ -20,6 +21,7 @@ import type { GridSlot } from "./config";
 import type {
   AdminBookingRow,
   AdminRoster,
+  AdminVirtualRow,
   AdminVolunteerRow,
   PublicSlot,
   PublicState,
@@ -118,6 +120,7 @@ export function publicState(data: SpeakerData, adminEnabled = false): PublicStat
       spotsLeft: Math.max(0, VOLUNTEER_CAPACITY - ordered.length),
     },
     surveyCount: data.surveys.length,
+    virtualCount: data.virtualRequests.length,
     adminEnabled,
   };
 }
@@ -161,7 +164,21 @@ export function adminRoster(data: SpeakerData): AdminRoster {
     code: volunteer.code,
   }));
 
-  return { bookings, volunteers, surveyCount: data.surveys.length };
+  const virtual = [...data.virtualRequests]
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .map<AdminVirtualRow>((request) => ({
+      name: request.name,
+      email: request.email,
+      phone: request.phone,
+      organization: request.organization,
+      role: roleLabel(request.role),
+      specialty: request.specialty,
+      days: request.days.map(virtualDayLabel),
+      note: request.note,
+      code: request.code,
+    }));
+
+  return { bookings, volunteers, virtual, surveyCount: data.surveys.length };
 }
 
 export const VOLUNTEER_LIMITS = {

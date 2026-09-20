@@ -155,7 +155,7 @@ export function AdminDock() {
 }
 
 function Roster({ roster }: { roster: AdminRoster }) {
-  const { bookings, volunteers } = roster;
+  const { bookings, volunteers, virtual } = roster;
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
       <Group
@@ -215,6 +215,32 @@ function Roster({ roster }: { roster: AdminRoster }) {
               </p>
             )}
             <Contacts email={volunteer.email} phone={volunteer.phone} />
+          </li>
+        ))}
+      </Group>
+
+      <Group
+        title="Sesiones virtuales"
+        count={virtual.length}
+        empty="Todavía nadie."
+      >
+        {virtual.map((entry) => (
+          <li key={entry.code} className="py-3">
+            <p className="text-sm font-semibold text-slate-900">{entry.name}</p>
+            {(entry.role || entry.organization) && (
+              <p className="mt-0.5 text-xs text-slate-600">
+                {[entry.role, entry.specialty, entry.organization].filter(Boolean).join(" · ")}
+              </p>
+            )}
+            <p className="mt-1 text-xs leading-relaxed text-slate-500">
+              {entry.days.join(" · ")}
+            </p>
+            {entry.note && (
+              <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
+                {entry.note}
+              </p>
+            )}
+            <Contacts email={entry.email} phone={entry.phone} />
           </li>
         ))}
       </Group>

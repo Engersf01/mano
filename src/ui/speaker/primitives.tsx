@@ -13,6 +13,7 @@
  * own `ink` and `aurora` scales are tuned for the dark stage and read as
  * washed-out pastels on white.
  */
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Panel({
@@ -209,5 +210,58 @@ export function PageBackdrop() {
       <div className="absolute inset-x-0 top-0 h-[32rem] bg-gradient-to-b from-cyan-50/70 via-white to-white" />
       <div className="absolute inset-0 opacity-[0.55] [background-image:radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:28px_28px]" />
     </div>
+  );
+}
+
+/**
+ * A tappable label wrapping a real radio or checkbox.
+ *
+ * The input stays in the DOM rather than being replaced by a styled `<button>`:
+ * that is what keeps the keyboard behaviour, the arrow-key grouping on radios
+ * and the screen-reader announcement, all of which a div with an onClick throws
+ * away. `sr-only` hides it visually without hiding it from anything else.
+ */
+export function ChoiceChip({
+  checked,
+  onChange,
+  children,
+  type,
+  name,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  children: React.ReactNode;
+  type: "radio" | "checkbox";
+  name?: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition",
+        "focus-within:ring-2 focus-within:ring-cyan-600/20",
+        checked
+          ? "border-cyan-700 bg-cyan-50 text-cyan-900"
+          : "border-slate-300 bg-white text-slate-700 hover:border-cyan-600 hover:bg-cyan-50/40",
+      )}
+    >
+      <input
+        type={type}
+        name={name}
+        checked={checked}
+        onChange={onChange}
+        className="sr-only"
+      />
+      <span
+        aria-hidden
+        className={cn(
+          "grid size-4 shrink-0 place-items-center border",
+          type === "radio" ? "rounded-full" : "rounded",
+          checked ? "border-cyan-700 bg-cyan-700 text-white" : "border-slate-400 bg-white",
+        )}
+      >
+        {checked && <Check size={11} strokeWidth={3} />}
+      </span>
+      {children}
+    </label>
   );
 }

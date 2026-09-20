@@ -8,16 +8,17 @@
  * real options hard to find.
  */
 import { useMemo, useState } from "react";
-import { CalendarCheck, Check, Clock, Loader2, Undo2 } from "lucide-react";
+import { CalendarCheck, Check, Clock, Loader2, Undo2, Video } from "lucide-react";
 import {
   BOOKING_INTERESTS,
   DOCTOR_ROLES,
   INTEREST_OTHER,
   SLOT_MINUTES,
+  VIRTUAL_WINDOW_LABEL,
   prettyClock,
 } from "@/speaker/config";
 import type { PublicSlot, PublicState } from "@/speaker/types";
-import { Button, ErrorNote, Field, TextArea, TextInput } from "@/ui/speaker/primitives";
+import { Button, ChoiceChip, ErrorNote, Field, TextArea, TextInput } from "@/ui/speaker/primitives";
 import { cn } from "@/lib/utils";
 
 type Confirmation = {
@@ -65,6 +66,13 @@ export function SlotPicker({
 
   const day = days.find((entry) => entry.date === activeDay) ?? days[0];
   const bookable = (day?.slots ?? []).filter((slot) => slot.open && !slot.past);
+  /**
+   * What is actually still gettable. `bookable` keeps the taken slots so the
+   * grid can show them struck through — that is how the day explains itself —
+   * but a day of nine crossed-out cells is a dead end just the same, and the
+   * page has to say so rather than leave the reader to work it out.
+   */
+  const free = bookable.filter((slot) => !slot.taken);
 
   const everyBenefit = BOOKING_INTERESTS.map((interest) => interest.id);
   /** "Todas" covers the five named outcomes; "Otro" is its own answer. */
@@ -207,9 +215,7 @@ export function SlotPicker({
       </div>
 
       {bookable.length === 0 ? (
-        <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
-          No hay nada libre el {day?.short ?? "ese día"} — prueba otro día.
-        </p>
+        <NoTimesLeft label={day?.short} />
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {bookable.map((slot) => {
@@ -244,6 +250,11 @@ export function SlotPicker({
           })}
         </div>
       )}
+
+      {/* The grid stays up even when every cell is struck through — it is what
+          explains the day — but on its own it is still a dead end, so the way
+          out goes directly underneath it. */}
+      {bookable.length > 0 && free.length === 0 && <NoTimesLeft label={day?.short} />}
 
       {selected && (
         <form
@@ -402,59 +413,6 @@ export function SlotPicker({
   );
 }
 
-/**
- * A tappable label wrapping a real radio or checkbox.
- *
- * The input stays in the DOM rather than being replaced by a styled `<button>`:
- * that is what keeps the keyboard behaviour, the arrow-key grouping on radios
- * and the screen-reader announcement, all of which a div with an onClick throws
- * away. `sr-only` hides it visually without hiding it from anything else.
- */
-function ChoiceChip({
-  checked,
-  onChange,
-  children,
-  type,
-  name,
-}: {
-  checked: boolean;
-  onChange: () => void;
-  children: React.ReactNode;
-  type: "radio" | "checkbox";
-  name?: string;
-}) {
-  return (
-    <label
-      className={cn(
-        "inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition",
-        "focus-within:ring-2 focus-within:ring-cyan-600/20",
-        checked
-          ? "border-cyan-700 bg-cyan-50 text-cyan-900"
-          : "border-slate-300 bg-white text-slate-700 hover:border-cyan-600 hover:bg-cyan-50/40",
-      )}
-    >
-      <input
-        type={type}
-        name={name}
-        checked={checked}
-        onChange={onChange}
-        className="sr-only"
-      />
-      <span
-        aria-hidden
-        className={cn(
-          "grid size-4 shrink-0 place-items-center border",
-          type === "radio" ? "rounded-full" : "rounded",
-          checked ? "border-cyan-700 bg-cyan-700 text-white" : "border-slate-400 bg-white",
-        )}
-      >
-        {checked && <Check size={11} strokeWidth={3} />}
-      </span>
-      {children}
-    </label>
-  );
-}
-
 function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => void }) {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -533,6 +491,27 @@ function CancelForm({ onDone, onClose }: { onDone: () => void; onClose: () => vo
         </Button>
       </div>
     </form>
+  );
+}
+
+/**
+ * The way out of a day with nothing left on it.
+ *
+ * A dead end is the one thing this page cannot afford: Sunday fills up and
+ * there is no "other day" after it. Rather than leave the reader on an
+ * apology, point them at the video call in the week that follows.
+ */
+function NoTimesLeft({ label }: { label?: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-center">
+      <p className="text-sm text-slate-600">No hay nada libre el {label ?? "ese día"}.</p>
+      <a
+        href="#virtual"
+        className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-700 underline decoration-dotted underline-offset-4 transition hover:text-cyan-900"
+      >
+        <Video size={14} /> Prueba otro día, o hablemos por video {VIRTUAL_WINDOW_LABEL}
+      </a>
+    </div>
   );
 }
 
