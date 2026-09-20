@@ -100,7 +100,7 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
             </span>
           </h1>
           <p className="mt-4 max-w-2xl text-balance text-base leading-relaxed text-slate-600">
-            Noventa segundos de video y luego elige la opción que te corresponda:
+            Minuto y medio de video y luego elige la opción que te corresponda:
             reserva 15–20 minutos conmigo durante el fin de semana, súbete al escenario
             durante la sesión del sábado, o cuéntame cómo fue nuestra conversación.
           </p>
