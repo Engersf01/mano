@@ -57,25 +57,41 @@ const DEFAULT_OPEN_UNTIL = "17:00";
  * Per-day exceptions to that window, keyed by date.
  *
  * One pair of times cannot describe the weekend, because the days are not the
- * same shape: Friday only opens up in the afternoon. Keeping the exception here
- * rather than widening `DEFAULT_OPEN_*` leaves Saturday and Sunday on the sane
- * default, which is what makes each date's hours readable at a glance.
+ * same shape: Friday only opens up in the afternoon, and Saturday runs in two
+ * separate stretches with the talk in between. Hence a list per date rather
+ * than a single pair — a day is its hours, however many pieces they come in.
  *
- * This moves the *default* only. A host toggle stored against a specific slot
- * still wins over anything here — see `isSlotOpen` — so changing a date after
- * the host has opened or closed its slots by hand will not move those slots.
+ * A date listed here has *fixed* hours: outside the window the slot is shut
+ * and the host console cannot open it, the same way it cannot open the talk's
+ * own block. This is deliberately stronger than moving a default. The hours
+ * came from the host as flat statements — nothing before 15:00 on Friday,
+ * nothing after 12:00 at the weekend — and a stored per-slot override from an
+ * earlier "open the whole day" would otherwise silently outrank them, which is
+ * exactly what production did until this was fixed.
+ *
+ * Inside the window the host is still in charge: every slot starts open and
+ * the console can close any of them. Re-opening an hour outside the window is
+ * an edit here, not a toggle. A date absent from this map keeps the old
+ * behaviour entirely — DEFAULT_OPEN_* sets the default, the console overrides.
  */
-const DAY_OPEN_WINDOWS: Record<string, { from: string; until: string }> = {
+const DAY_OPEN_WINDOWS: Record<string, { from: string; until: string }[]> = {
   // Friday: nothing before 15:00, then straight through to 18:00.
-  "2026-10-02": { from: "15:00", until: "18:00" },
-  // Saturday and Sunday: mornings only, and those are all spoken for — see
-  // HELD_WINDOWS. Nothing at all after 12:00.
-  "2026-10-03": { from: "09:00", until: "12:00" },
-  "2026-10-04": { from: "09:00", until: "12:00" },
+  "2026-10-02": [{ from: "15:00", until: "18:00" }],
+  // Saturday: the morning is offered but entirely spoken for (see
+  // HELD_WINDOWS), then a genuinely free afternoon after the talk. The gap
+  // between them is the talk itself, 13:00–14:30, which SESSION carves out
+  // anyway — naming 15:00 here rather than leaning on that carve-out keeps
+  // the day's hours readable in one place.
+  "2026-10-03": [
+    { from: "09:00", until: "12:00" },
+    { from: "15:00", until: "18:00" },
+  ],
+  // Sunday: mornings only, all spoken for, nothing at all after 12:00.
+  "2026-10-04": [{ from: "09:00", until: "12:00" }],
 };
 
-const openWindowFor = (date: string) =>
-  DAY_OPEN_WINDOWS[date] ?? { from: DEFAULT_OPEN_FROM, until: DEFAULT_OPEN_UNTIL };
+const openWindowsFor = (date: string) =>
+  DAY_OPEN_WINDOWS[date] ?? [{ from: DEFAULT_OPEN_FROM, until: DEFAULT_OPEN_UNTIL }];
 
 /**
  * Times that are already spoken for, with no attendee booking behind them.
@@ -337,6 +353,11 @@ export type GridSlot = {
   session: boolean;
   /** Spoken for already: shown to attendees as taken, and never bookable. */
   held: boolean;
+  /**
+   * Outside this date's fixed hours, so shut regardless of what the store
+   * says. Only ever true for a date in `DAY_OPEN_WINDOWS`.
+   */
+  outsideHours: boolean;
   defaultOpen: boolean;
 };
 
@@ -360,7 +381,8 @@ export function buildGrid(): GridSlot[] {
   const gridEnd = toMinutes(GRID_END);
 
   for (const day of EVENT_DAYS) {
-    const open = openWindowFor(day.date);
+    const openWindows = openWindowsFor(day.date);
+    const fixedHours = day.date in DAY_OPEN_WINDOWS;
 
     for (let at = toMinutes(GRID_START); at + SLOT_MINUTES <= gridEnd; at += SLOT_MINUTES) {
       const start = toClock(at);
@@ -378,6 +400,14 @@ export function buildGrid(): GridSlot[] {
         (window) => at < toMinutes(window.until) && at + SLOT_MINUTES > toMinutes(window.from),
       );
 
+      // Containment, not overlap, and unlike `session` and `held` that is the
+      // point: a slot only counts as inside the hours if the whole 20 minutes
+      // fits in one window. A slot straddling 12:00 is not an offered slot.
+      const withinHours = openWindows.some(
+        (window) =>
+          at >= toMinutes(window.from) && at + SLOT_MINUTES <= toMinutes(window.until),
+      );
+
       slots.push({
         id: slotId(day.date, start),
         date: day.date,
@@ -385,10 +415,8 @@ export function buildGrid(): GridSlot[] {
         end,
         session,
         held,
-        defaultOpen:
-          !session &&
-          at >= toMinutes(open.from) &&
-          at + SLOT_MINUTES <= toMinutes(open.until),
+        outsideHours: fixedHours && !withinHours,
+        defaultOpen: !session && withinHours,
       });
     }
   }
