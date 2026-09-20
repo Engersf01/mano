@@ -60,6 +60,10 @@ type HostSlot = {
   start: string;
   end: string;
   session: boolean;
+  /** Spoken for in config, with no attendee record behind it. */
+  held: boolean;
+  /** Outside the date's fixed hours, so not openable from here. */
+  outsideHours: boolean;
   open: boolean;
   past: boolean;
   booking: Booking | null;
@@ -493,18 +497,18 @@ function AvailabilityPanel({
   );
 
   const openCount = useMemo(
-    () => grid.filter((slot) => !slot.session && shown(slot)).length,
+    () => grid.filter((slot) => !slot.session && !slot.held && shown(slot)).length,
     [grid, shown],
   );
 
   return (
     <Panel
       title="Cuándo estoy disponible"
-      subtitle={`Toca para abrir o cerrar una franja de ${SLOT_MINUTES} minutos. Las franjas cerradas nunca aparecen en la página pública.`}
+      subtitle={`Toca para abrir o cerrar una franja de ${SLOT_MINUTES} minutos. Las franjas cerradas nunca aparecen en la página pública. Las marcadas "fijo" están fuera del horario del día y las "ocupadas" ya están comprometidas: ambas se cambian en el código, no aquí.`}
       actions={
         <div className="flex items-center gap-2">
           <StatusPill tone={dirtyCount > 0 ? "busy" : "good"}>
-            {dirtyCount > 0 ? `${dirtyCount} sin guardar` : `${openCount} abiertas`}
+            {dirtyCount > 0 ? `${dirtyCount} sin guardar` : `${openCount} libres`}
           </StatusPill>
           {dirtyCount > 0 && (
             <>
@@ -523,7 +527,12 @@ function AvailabilityPanel({
       <div className="space-y-5">
         {EVENT_DAYS.map((day) => {
           const slots = grid.filter((slot) => slot.date === day.date);
-          const selectable = slots.filter((slot) => !slot.session);
+          // Only slots this console can actually change: the rest are fixed
+          // in config, and staging an edit the server drops would show a
+          // dirty count that saves as nothing.
+          const selectable = slots.filter(
+            (slot) => !slot.session && !slot.outsideHours && !slot.held,
+          );
           return (
             <div key={day.date}>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -581,18 +590,42 @@ function AvailabilityPanel({
 
               <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 md:grid-cols-9">
                 {slots.map((slot) => {
+                  // Three kinds of slot the console cannot change, drawn as
+                  // plain cells rather than buttons. A control that looks
+                  // pressable and silently refuses is worse than no control.
                   if (slot.session) {
                     return (
-                      <div
+                      <LockedSlot
                         key={slot.id}
+                        start={slot.start}
+                        label="Sesión"
+                        tone="violet"
                         title={`Tu sesión va de ${prettyClock(SESSION.start)} a ${prettyClock(SESSION.end)}`}
-                        className="rounded-lg border border-violet-200 bg-violet-50 px-1 py-2 text-center text-[11px] text-violet-700"
-                      >
-                        {prettyClock(slot.start)}
-                        <span className="mt-0.5 block text-[9px] uppercase tracking-[0.12em]">
-                          Sesión
-                        </span>
-                      </div>
+                      />
+                    );
+                  }
+
+                  if (slot.outsideHours) {
+                    return (
+                      <LockedSlot
+                        key={slot.id}
+                        start={slot.start}
+                        label="Fijo"
+                        tone="slate"
+                        title="Fuera del horario de este día. Se cambia en la configuración del sitio, no desde aquí."
+                      />
+                    );
+                  }
+
+                  if (slot.held) {
+                    return (
+                      <LockedSlot
+                        key={slot.id}
+                        start={slot.start}
+                        label="Ocupada"
+                        tone="amber"
+                        title="Ya comprometida. La página pública la muestra tachada como ocupada."
+                      />
                     );
                   }
 
@@ -642,6 +675,40 @@ function AvailabilityPanel({
         })}
       </div>
     </Panel>
+  );
+}
+
+/** A slot the console can show but not change. */
+function LockedSlot({
+  start,
+  label,
+  tone,
+  title,
+}: {
+  start: string;
+  label: string;
+  tone: "violet" | "slate" | "amber";
+  title: string;
+}) {
+  const TONES = {
+    violet: "border-violet-200 bg-violet-50 text-violet-700",
+    slate: "border-slate-200 bg-slate-100/70 text-slate-400",
+    amber: "border-amber-300 bg-amber-50 text-amber-800",
+  } as const;
+
+  return (
+    <div
+      title={title}
+      className={cn(
+        "rounded-lg border px-1 py-2 text-center text-[11px] tabular-nums",
+        TONES[tone],
+      )}
+    >
+      {prettyClock(start)}
+      <span className="mt-0.5 block truncate text-[9px] uppercase tracking-[0.12em]">
+        {label}
+      </span>
+    </div>
   );
 }
 
