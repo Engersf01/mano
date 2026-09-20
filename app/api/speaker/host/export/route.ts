@@ -1,4 +1,4 @@
-import { SURVEY_QUESTIONS } from "@/speaker/config";
+import { SURVEY_QUESTIONS, interestLabel, roleLabel } from "@/speaker/config";
 import { orderedVolunteers, standingAt } from "@/speaker/derive";
 import { authorizeHost } from "@/server/speakerAuth";
 import { readData } from "@/server/speakerStore";
@@ -52,7 +52,20 @@ export async function GET(request: Request) {
 
   if (kind === "bookings") {
     rows = [
-      ["Franja", "Fecha", "Hora", "Nombre", "Correo", "Empresa", "Qué quiere tratar", "Código", "Reservado el"],
+      [
+        "Franja",
+        "Fecha",
+        "Hora",
+        "Nombre",
+        "Correo",
+        "Centro o lugar de práctica",
+        "Residente o especialista",
+        "Especialidad",
+        "Qué le interesa",
+        "Otro (detalle)",
+        "Código",
+        "Reservado el",
+      ],
       ...[...data.bookings]
         .sort((a, b) => a.slotId.localeCompare(b.slotId))
         .map((booking) => {
@@ -64,6 +77,11 @@ export async function GET(request: Request) {
             booking.name,
             booking.email,
             booking.organization,
+            roleLabel(booking.role),
+            booking.specialty,
+            // One cell, so the sheet stays one row per booking; the labels are
+            // what the host reads, not the storage ids.
+            booking.interests.map(interestLabel).join(" · "),
             booking.topic,
             booking.code,
             stamp(booking.createdAt),

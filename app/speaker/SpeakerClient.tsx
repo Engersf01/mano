@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, MessageSquareQuote, Users } from "lucide-react";
 import type { PublicState } from "@/speaker/types";
+import { AdminDock } from "@/ui/speaker/AdminDock";
 import { BrandLockup, BrandMark } from "@/ui/speaker/BrandMark";
 import { PageBackdrop } from "@/ui/speaker/primitives";
 import { SlotPicker } from "@/ui/speaker/SlotPicker";
@@ -179,6 +180,8 @@ export default function SpeakerClient({ initial }: { initial: PublicState }) {
           </Link>
         </footer>
       </div>
+      {/* Only when a PIN is actually configured — see `adminEnabled`. */}
+      {state.adminEnabled && <AdminDock />}
     </main>
   );
 }

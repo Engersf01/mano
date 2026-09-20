@@ -8,6 +8,8 @@
 import {
   EVENT_DAYS,
   SESSION,
+  interestLabel,
+  roleLabel,
   VOLUNTEERS_BACKUP,
   VOLUNTEERS_SELECTED,
   VOLUNTEER_CAPACITY,
@@ -15,6 +17,9 @@ import {
   eventNow,
 } from "./config";
 import type {
+  AdminBookingRow,
+  AdminRoster,
+  AdminVolunteerRow,
   PublicSlot,
   PublicState,
   SpeakerData,
@@ -57,7 +62,7 @@ export function firstNameOf(fullName: string) {
  * roster carries first names only. This page's URL gets pasted into a
  * conference Slack, so anything more than that is a leak by default.
  */
-export function publicState(data: SpeakerData): PublicState {
+export function publicState(data: SpeakerData, adminEnabled = false): PublicState {
   const now = eventNow(data.settings.timeZone);
   const grid = buildGrid();
   const taken = new Set(data.bookings.map((booking) => booking.slotId));
@@ -74,7 +79,10 @@ export function publicState(data: SpeakerData): PublicState {
         start: slot.start,
         end: slot.end,
         open: isSlotOpen(data, slot.id, slot.defaultOpen),
-        taken: taken.has(slot.id),
+        // A held slot reads as taken, because to an attendee it is: the time
+        // is gone either way, and the page has no business explaining which
+        // kind of gone it is.
+        taken: taken.has(slot.id) || slot.held,
         // Ids are `<date>T<HH:MM>` wall clock, so this is a string compare
         // against the same shape — see the note on `slotId`.
         past: slot.id < now,
@@ -99,7 +107,50 @@ export function publicState(data: SpeakerData): PublicState {
       spotsLeft: Math.max(0, VOLUNTEER_CAPACITY - ordered.length),
     },
     surveyCount: data.surveys.length,
+    adminEnabled,
   };
+}
+
+/**
+ * Who signed up and how to reach them.
+ *
+ * Everything the public payload deliberately withholds — full names, emails,
+ * phone numbers — so this is only ever built behind a verified PIN, and the
+ * labels are resolved here so the panel holds no lookup tables of its own.
+ */
+export function adminRoster(data: SpeakerData): AdminRoster {
+  const bookings = [...data.bookings]
+    .sort((a, b) => a.slotId.localeCompare(b.slotId))
+    .map<AdminBookingRow>((booking) => {
+      const [date, start] = booking.slotId.split("T");
+      const slot = buildGrid().find((entry) => entry.id === booking.slotId);
+      return {
+        slotId: booking.slotId,
+        date,
+        start,
+        end: slot?.end ?? "",
+        name: booking.name,
+        email: booking.email,
+        organization: booking.organization,
+        role: roleLabel(booking.role),
+        specialty: booking.specialty,
+        interests: booking.interests.map(interestLabel),
+        topic: booking.topic,
+        code: booking.code,
+      };
+    });
+
+  const volunteers = orderedVolunteers(data).map<AdminVolunteerRow>((volunteer, index) => ({
+    name: volunteer.name,
+    email: volunteer.email,
+    phone: volunteer.phone,
+    organization: volunteer.organization,
+    standing: standingAt(index),
+    note: volunteer.note,
+    code: volunteer.code,
+  }));
+
+  return { bookings, volunteers, surveyCount: data.surveys.length };
 }
 
 export const VOLUNTEER_LIMITS = {

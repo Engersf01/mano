@@ -68,10 +68,33 @@ const DEFAULT_OPEN_UNTIL = "17:00";
 const DAY_OPEN_WINDOWS: Record<string, { from: string; until: string }> = {
   // Friday: nothing before 15:00, then straight through to 18:00.
   "2026-10-02": { from: "15:00", until: "18:00" },
+  // Saturday and Sunday: mornings only, and those are all spoken for — see
+  // HELD_WINDOWS. Nothing at all after 12:00.
+  "2026-10-03": { from: "09:00", until: "12:00" },
+  "2026-10-04": { from: "09:00", until: "12:00" },
 };
 
 const openWindowFor = (date: string) =>
   DAY_OPEN_WINDOWS[date] ?? { from: DEFAULT_OPEN_FROM, until: DEFAULT_OPEN_UNTIL };
+
+/**
+ * Times that are already spoken for, with no attendee booking behind them.
+ *
+ * A held slot is shown rather than hidden, struck through and labelled
+ * "Ocupada" exactly like a real booking. The difference from simply closing it
+ * matters to the person reading the page: a morning that is visibly full says
+ * these conversations are happening and you are late, where a morning that is
+ * absent just looks like hours that were never offered.
+ *
+ * Held is config, not stored state, so unlike the host console's per-slot
+ * toggles it cannot be undone from `/speaker/host` — it needs an edit here.
+ * That is the right trade for time committed before the event; anything the
+ * host needs to change mid-conference belongs in `availability` instead.
+ */
+const HELD_WINDOWS: Record<string, { from: string; until: string }[]> = {
+  "2026-10-03": [{ from: "09:00", until: "12:00" }],
+  "2026-10-04": [{ from: "09:00", until: "12:00" }],
+};
 
 /**
  * The talk itself: volunteers come up during this block on Saturday, so it is
@@ -116,6 +139,64 @@ export const VOLUNTEER_REQUIREMENTS = [
     detail: "Llevarás micrófono y hablarás al público, no solo conmigo.",
   },
 ] as const;
+
+/**
+ * Resident or specialist, and which specialty.
+ *
+ * The audience is clinicians, and the two cases want different conversations —
+ * a resident is asking about their training years, a pulmonologist about their
+ * clinic. Two options rather than a free-text job title: this is filled in on a
+ * phone between sessions, and a tap beats typing.
+ *
+ * Ids stay English because they are storage keys, the same rule the survey
+ * questions follow; only the labels are the language of the page.
+ */
+export const DOCTOR_ROLES = [
+  { id: "resident" as const, label: "Residente" },
+  { id: "specialist" as const, label: "Especialista" },
+];
+
+export type DoctorRole = (typeof DOCTOR_ROLES)[number]["id"];
+
+/**
+ * What the person wants out of the 1:1, as outcomes rather than topics.
+ *
+ * This replaced a free-text "what would you like to discuss?", which asked
+ * someone to compose a sentence about a product they have not seen yet. Named
+ * benefits are answerable in a tap, and they arrive comparable across people,
+ * so the roster can be read as a demand signal instead of thirty paragraphs.
+ */
+export const BOOKING_INTERESTS = [
+  { id: "ai-first" as const, label: "Tener un sistema AI-First que apoye mi práctica" },
+  { id: "efficiency" as const, label: "Más eficiencia y efectividad en mi práctica" },
+  { id: "automation" as const, label: "Automatizar operaciones y procesos clínicos" },
+  { id: "engagement" as const, label: "Aumentar la participación de mis pacientes" },
+  { id: "volume" as const, label: "Aumentar la cantidad de pacientes" },
+];
+
+/**
+ * "Something else", which is a selectable answer and also the one that opens a
+ * text box. Kept out of `BOOKING_INTERESTS` because it behaves differently in
+ * every place that renders the list.
+ */
+export const INTEREST_OTHER = "other";
+
+/** Everything the booking endpoint will accept in `interests`. */
+export const BOOKING_INTEREST_IDS: string[] = [
+  ...BOOKING_INTERESTS.map((interest) => interest.id),
+  INTEREST_OTHER,
+];
+
+/** Label for one stored interest id, for the console and the CSV. */
+export function interestLabel(id: string) {
+  if (id === INTEREST_OTHER) return "Otro";
+  return BOOKING_INTERESTS.find((interest) => interest.id === id)?.label ?? id;
+}
+
+/** Label for a stored role id. Empty for bookings taken before it was asked. */
+export function roleLabel(id: string) {
+  return DOCTOR_ROLES.find((role) => role.id === id)?.label ?? "";
+}
 
 export type ScaleQuestion = {
   id: string;
@@ -254,6 +335,8 @@ export type GridSlot = {
   end: string;
   /** Inside the talk's own block, so never bookable for a 1:1. */
   session: boolean;
+  /** Spoken for already: shown to attendees as taken, and never bookable. */
+  held: boolean;
   defaultOpen: boolean;
 };
 
@@ -289,12 +372,19 @@ export function buildGrid(): GridSlot[] {
         at < toMinutes(SESSION.end) &&
         at + SLOT_MINUTES > toMinutes(SESSION.start);
 
+      // Overlap again, and for the same reason as `session`: a slot that
+      // straddles the end of a held window is not a clean 20 minutes free.
+      const held = (HELD_WINDOWS[day.date] ?? []).some(
+        (window) => at < toMinutes(window.until) && at + SLOT_MINUTES > toMinutes(window.from),
+      );
+
       slots.push({
         id: slotId(day.date, start),
         date: day.date,
         start,
         end,
         session,
+        held,
         defaultOpen:
           !session &&
           at >= toMinutes(open.from) &&

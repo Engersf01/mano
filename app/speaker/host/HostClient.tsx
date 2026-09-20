@@ -24,7 +24,9 @@ import {
   SESSION,
   SLOT_MINUTES,
   SURVEY_QUESTIONS,
+  interestLabel,
   prettyClock,
+  roleLabel,
 } from "@/speaker/config";
 import { VOLUNTEER_LIMITS } from "@/speaker/derive";
 import { PASSCODE_HEADER } from "@/speaker/protocol";
@@ -706,6 +708,17 @@ function BookingsPanel({
                     )}
                   </p>
                   <p className="truncate text-xs text-slate-500">{booking.email}</p>
+                  {roleLabel(booking.role) && (
+                    <p className="text-xs text-slate-500">
+                      {roleLabel(booking.role)}
+                      {booking.specialty && ` · ${booking.specialty}`}
+                    </p>
+                  )}
+                  {booking.interests?.length > 0 && (
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                      {booking.interests.map(interestLabel).join(" · ")}
+                    </p>
+                  )}
                   {booking.topic && (
                     <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-600">
                       {booking.topic}

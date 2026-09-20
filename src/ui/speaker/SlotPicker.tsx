@@ -9,7 +9,13 @@
  */
 import { useMemo, useState } from "react";
 import { CalendarCheck, Check, Clock, Loader2, Undo2 } from "lucide-react";
-import { SLOT_MINUTES, prettyClock } from "@/speaker/config";
+import {
+  BOOKING_INTERESTS,
+  DOCTOR_ROLES,
+  INTEREST_OTHER,
+  SLOT_MINUTES,
+  prettyClock,
+} from "@/speaker/config";
 import type { PublicSlot, PublicState } from "@/speaker/types";
 import { Button, ErrorNote, Field, TextArea, TextInput } from "@/ui/speaker/primitives";
 import { cn } from "@/lib/utils";
@@ -48,6 +54,9 @@ export function SlotPicker({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [organization, setOrganization] = useState("");
+  const [role, setRole] = useState("");
+  const [specialty, setSpecialty] = useState("");
+  const [interests, setInterests] = useState<string[]>([]);
   const [topic, setTopic] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +66,15 @@ export function SlotPicker({
   const day = days.find((entry) => entry.date === activeDay) ?? days[0];
   const bookable = (day?.slots ?? []).filter((slot) => slot.open && !slot.past);
 
+  const everyBenefit = BOOKING_INTERESTS.map((interest) => interest.id);
+  /** "Todas" covers the five named outcomes; "Otro" is its own answer. */
+  const allChosen = everyBenefit.every((id) => interests.includes(id));
+
+  const toggleInterest = (id: string) =>
+    setInterests((current) =>
+      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
+    );
+
   async function book() {
     if (!selected) return;
     setBusy(true);
@@ -65,7 +83,16 @@ export function SlotPicker({
       const response = await fetch("/api/speaker/booking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slotId: selected.id, name, email, organization, topic }),
+        body: JSON.stringify({
+          slotId: selected.id,
+          name,
+          email,
+          organization,
+          role,
+          specialty,
+          interests,
+          topic,
+        }),
       });
       const body = (await response.json()) as
         | { code: string; date: string; start: string; end: string }
@@ -85,6 +112,7 @@ export function SlotPicker({
         dayLabel: day?.label ?? body.date,
       });
       setSelected(null);
+      setInterests([]);
       setTopic("");
       onChanged();
     } catch {
@@ -251,25 +279,88 @@ export function SlotPicker({
               />
             </Field>
           </div>
-          <Field label="Empresa o equipo" hint="Opcional.">
+          <Field label="Centro de salud o lugar de práctica" hint="Opcional.">
             <TextInput
               autoComplete="organization"
               value={organization}
               onChange={(event) => setOrganization(event.target.value)}
-              placeholder="Laboratorios Northwind"
+              placeholder="Hospital General · Consulta privada"
             />
           </Field>
-          <Field
-            label="¿Qué te gustaría tratar?"
-            hint="Opcional, pero es lo que hace que quince minutos valgan la pena."
-          >
-            <TextArea
-              rows={3}
-              value={topic}
-              onChange={(event) => setTopic(event.target.value)}
-              placeholder="Estamos intentando…"
-            />
-          </Field>
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
+              ¿Residente o especialista?
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {DOCTOR_ROLES.map((entry) => (
+                <ChoiceChip
+                  key={entry.id}
+                  type="radio"
+                  name="role"
+                  checked={role === entry.id}
+                  onChange={() => setRole(entry.id)}
+                >
+                  {entry.label}
+                </ChoiceChip>
+              ))}
+            </div>
+          </fieldset>
+          {role === "specialist" && (
+            <Field label="¿Cuál es tu especialidad?">
+              <TextInput
+                required
+                value={specialty}
+                onChange={(event) => setSpecialty(event.target.value)}
+                placeholder="Neumología"
+              />
+            </Field>
+          )}
+          <fieldset className="flex flex-col gap-1.5">
+            <legend className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
+              ¿Qué te interesa conseguir?
+            </legend>
+            <div className="flex flex-col gap-2">
+              {BOOKING_INTERESTS.map((interest) => (
+                <ChoiceChip
+                  key={interest.id}
+                  type="checkbox"
+                  checked={interests.includes(interest.id)}
+                  onChange={() => toggleInterest(interest.id)}
+                >
+                  {interest.label}
+                </ChoiceChip>
+              ))}
+              <div className="flex flex-wrap gap-2">
+                <ChoiceChip
+                  type="checkbox"
+                  checked={allChosen}
+                  onChange={() => setInterests(allChosen ? [] : everyBenefit)}
+                >
+                  Todas
+                </ChoiceChip>
+                <ChoiceChip
+                  type="checkbox"
+                  checked={interests.includes(INTEREST_OTHER)}
+                  onChange={() => toggleInterest(INTEREST_OTHER)}
+                >
+                  Otro
+                </ChoiceChip>
+              </div>
+            </div>
+            <span className="text-[11px] leading-snug text-slate-500">
+              Elige las que quieras — es lo que hace que quince minutos valgan la pena.
+            </span>
+          </fieldset>
+          {interests.includes(INTEREST_OTHER) && (
+            <Field label="Cuéntame un poco más">
+              <TextArea
+                rows={3}
+                value={topic}
+                onChange={(event) => setTopic(event.target.value)}
+                placeholder="Estamos intentando…"
+              />
+            </Field>
+          )}
           {error && <ErrorNote>{error}</ErrorNote>}
           <div className="flex flex-wrap gap-2">
             <Button
@@ -308,6 +399,59 @@ export function SlotPicker({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * A tappable label wrapping a real radio or checkbox.
+ *
+ * The input stays in the DOM rather than being replaced by a styled `<button>`:
+ * that is what keeps the keyboard behaviour, the arrow-key grouping on radios
+ * and the screen-reader announcement, all of which a div with an onClick throws
+ * away. `sr-only` hides it visually without hiding it from anything else.
+ */
+function ChoiceChip({
+  checked,
+  onChange,
+  children,
+  type,
+  name,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  children: React.ReactNode;
+  type: "radio" | "checkbox";
+  name?: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "inline-flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition",
+        "focus-within:ring-2 focus-within:ring-cyan-600/20",
+        checked
+          ? "border-cyan-700 bg-cyan-50 text-cyan-900"
+          : "border-slate-300 bg-white text-slate-700 hover:border-cyan-600 hover:bg-cyan-50/40",
+      )}
+    >
+      <input
+        type={type}
+        name={name}
+        checked={checked}
+        onChange={onChange}
+        className="sr-only"
+      />
+      <span
+        aria-hidden
+        className={cn(
+          "grid size-4 shrink-0 place-items-center border",
+          type === "radio" ? "rounded-full" : "rounded",
+          checked ? "border-cyan-700 bg-cyan-700 text-white" : "border-slate-400 bg-white",
+        )}
+      >
+        {checked && <Check size={11} strokeWidth={3} />}
+      </span>
+      {children}
+    </label>
   );
 }
 
