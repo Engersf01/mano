@@ -74,7 +74,10 @@ export function publicState(data: SpeakerData): PublicState {
         start: slot.start,
         end: slot.end,
         open: isSlotOpen(data, slot.id, slot.defaultOpen),
-        taken: taken.has(slot.id),
+        // A held slot reads as taken, because to an attendee it is: the time
+        // is gone either way, and the page has no business explaining which
+        // kind of gone it is.
+        taken: taken.has(slot.id) || slot.held,
         // Ids are `<date>T<HH:MM>` wall clock, so this is a string compare
         // against the same shape — see the note on `slotId`.
         past: slot.id < now,

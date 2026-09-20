@@ -68,10 +68,33 @@ const DEFAULT_OPEN_UNTIL = "17:00";
 const DAY_OPEN_WINDOWS: Record<string, { from: string; until: string }> = {
   // Friday: nothing before 15:00, then straight through to 18:00.
   "2026-10-02": { from: "15:00", until: "18:00" },
+  // Saturday and Sunday: mornings only, and those are all spoken for — see
+  // HELD_WINDOWS. Nothing at all after 12:00.
+  "2026-10-03": { from: "09:00", until: "12:00" },
+  "2026-10-04": { from: "09:00", until: "12:00" },
 };
 
 const openWindowFor = (date: string) =>
   DAY_OPEN_WINDOWS[date] ?? { from: DEFAULT_OPEN_FROM, until: DEFAULT_OPEN_UNTIL };
+
+/**
+ * Times that are already spoken for, with no attendee booking behind them.
+ *
+ * A held slot is shown rather than hidden, struck through and labelled
+ * "Ocupada" exactly like a real booking. The difference from simply closing it
+ * matters to the person reading the page: a morning that is visibly full says
+ * these conversations are happening and you are late, where a morning that is
+ * absent just looks like hours that were never offered.
+ *
+ * Held is config, not stored state, so unlike the host console's per-slot
+ * toggles it cannot be undone from `/speaker/host` — it needs an edit here.
+ * That is the right trade for time committed before the event; anything the
+ * host needs to change mid-conference belongs in `availability` instead.
+ */
+const HELD_WINDOWS: Record<string, { from: string; until: string }[]> = {
+  "2026-10-03": [{ from: "09:00", until: "12:00" }],
+  "2026-10-04": [{ from: "09:00", until: "12:00" }],
+};
 
 /**
  * The talk itself: volunteers come up during this block on Saturday, so it is
@@ -254,6 +277,8 @@ export type GridSlot = {
   end: string;
   /** Inside the talk's own block, so never bookable for a 1:1. */
   session: boolean;
+  /** Spoken for already: shown to attendees as taken, and never bookable. */
+  held: boolean;
   defaultOpen: boolean;
 };
 
@@ -289,12 +314,19 @@ export function buildGrid(): GridSlot[] {
         at < toMinutes(SESSION.end) &&
         at + SLOT_MINUTES > toMinutes(SESSION.start);
 
+      // Overlap again, and for the same reason as `session`: a slot that
+      // straddles the end of a held window is not a clean 20 minutes free.
+      const held = (HELD_WINDOWS[day.date] ?? []).some(
+        (window) => at < toMinutes(window.until) && at + SLOT_MINUTES > toMinutes(window.from),
+      );
+
       slots.push({
         id: slotId(day.date, start),
         date: day.date,
         start,
         end,
         session,
+        held,
         defaultOpen:
           !session &&
           at >= toMinutes(open.from) &&

@@ -34,6 +34,10 @@ export async function POST(request: Request) {
 
   const slot = buildGrid().find((entry) => entry.id === slotId);
   if (!slot || slot.session) return bad("Esa hora no es una de las franjas de 1:1.");
+  // Held slots show as taken, so the picker never offers one. Checked here all
+  // the same: the page's grid is only as fresh as its last poll, and a slot the
+  // display calls "Ocupada" must not be bookable by a stale client or by hand.
+  if (slot.held) return bad("Esa franja ya está ocupada. Elige otra.", 409);
 
   const result = await mutate((data) => {
     if (!data.settings.bookingOpen) {
