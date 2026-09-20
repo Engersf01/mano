@@ -16,6 +16,7 @@ import {
   buildGrid,
   eventNow,
 } from "./config";
+import type { GridSlot } from "./config";
 import type {
   AdminBookingRow,
   AdminRoster,
@@ -27,9 +28,19 @@ import type {
   VolunteerStanding,
 } from "./types";
 
-/** Host override wins; otherwise the grid's own default. */
-export function isSlotOpen(data: SpeakerData, id: string, defaultOpen: boolean) {
-  return data.availability[id] ?? defaultOpen;
+/**
+ * Is this slot open to attendees?
+ *
+ * Inside a date's hours the host override wins, and otherwise the grid's own
+ * default applies. Outside them nothing wins: a date with fixed hours is shut
+ * outside them whatever the store holds. That last clause is not theoretical —
+ * production carried an `availability` override for every slot from 08:00 to
+ * 19:40, written by an earlier "open the whole day", and without it those
+ * overrides quietly outranked the hours the host had asked for.
+ */
+export function isSlotOpen(data: SpeakerData, slot: GridSlot) {
+  if (slot.outsideHours) return false;
+  return data.availability[slot.id] ?? slot.defaultOpen;
 }
 
 /**
@@ -78,7 +89,7 @@ export function publicState(data: SpeakerData, adminEnabled = false): PublicStat
         date: slot.date,
         start: slot.start,
         end: slot.end,
-        open: isSlotOpen(data, slot.id, slot.defaultOpen),
+        open: isSlotOpen(data, slot),
         // A held slot reads as taken, because to an attendee it is: the time
         // is gone either way, and the page has no business explaining which
         // kind of gone it is.

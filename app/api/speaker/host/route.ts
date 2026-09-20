@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 
   const grid = buildGrid().map((slot) => ({
     ...slot,
-    open: isSlotOpen(data, slot.id, slot.defaultOpen),
+    open: isSlotOpen(data, slot),
     past: slot.id < now,
     booking: bookingBySlot.get(slot.id) ?? null,
   }));
@@ -122,8 +122,11 @@ export async function POST(request: Request) {
       for (const [id, value] of Object.entries(submitted)) {
         const slot = grid.get(id);
         // A slot inside the talk's own block is never openable, whatever the
-        // console sends — that carve-out is the point of having it.
-        if (!slot || slot.session || typeof value !== "boolean") continue;
+        // console sends — that carve-out is the point of having it. Same for a
+        // slot outside a date's fixed hours: `isSlotOpen` would ignore the
+        // stored value anyway, and a toggle that saves but changes nothing is
+        // worse than one that refuses.
+        if (!slot || slot.session || slot.outsideHours || typeof value !== "boolean") continue;
         // Closing a slot someone already booked would strand the booking:
         // the attendee still holds a code for a meeting the grid says is
         // shut. Cancel the booking first, deliberately, then close the slot.

@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     if (!data.settings.bookingOpen) {
       return { ok: false, error: "Las reservas de 1:1 están cerradas ahora mismo." } as const;
     }
-    if (!isSlotOpen(data, slot.id, slot.defaultOpen)) {
+    if (!isSlotOpen(data, slot)) {
       return {
         ok: false,
         error: "No estoy disponible a esa hora — elige otra franja.",
