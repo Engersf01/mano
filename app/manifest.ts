@@ -16,5 +16,20 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "any",
     background_color: "#03040c",
     theme_color: "#03040c",
+    // Android refuses the install prompt outright without an icon of at least
+    // 192px, so this is not decoration — it is what makes the panel
+    // installable. The `maskable` copy is drawn inside the safe circle: the
+    // launcher crops whatever shape the device uses, and a full-bleed icon
+    // loses its edges to it.
+    icons: [
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      {
+        src: "/icons/icon-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+    ],
   };
 }
