@@ -8,7 +8,14 @@ Mano is a web app where a presenter steers a cinematic 3D presentation with thei
 
 ## Live experience
 
-Open `/` to land. From there you can:
+Two front doors, decided by the hostname:
+
+- **[meet.engers.me](https://meet.engers.me)** is the conference address. It
+  serves the NeumoMeet speaker hub straight from `/` — short enough to read off
+  a slide. See [docs/domain.md](docs/domain.md) for how it is wired up.
+- Every other hostname opens the Mano stage at `/`.
+
+From the stage you can:
 
 - **Run calibration** — `/calibrate` walks you through the gesture vocabulary while the camera is live.
 - **Open the stage** — `/present` is the full presenter view: 3D scene, presenter notes, camera tile with hand overlay, AI panel, control dock.
