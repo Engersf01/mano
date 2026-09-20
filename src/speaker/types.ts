@@ -78,6 +78,18 @@ export type SurveyResponse = {
   createdAt: number;
 };
 
+/**
+ * Failed admin PIN attempts for one client, so a six-digit PIN cannot simply
+ * be counted through. Keyed by a hash of the IP, never the IP itself.
+ */
+export type AdminAttempt = {
+  /** Failures since `firstAt`, reset once a lockout is served. */
+  count: number;
+  firstAt: number;
+  /** Epoch ms until which this client is refused outright. 0 when not locked. */
+  lockedUntil: number;
+};
+
 /** Everything persisted, in one document — see `src/server/speakerStore.ts`. */
 export type SpeakerData = {
   version: 1;
@@ -91,6 +103,8 @@ export type SpeakerData = {
   bookings: Booking[];
   volunteers: Volunteer[];
   surveys: SurveyResponse[];
+  /** Brute-force state for the admin PIN. Pruned as it is written. */
+  adminAttempts: Record<string, AdminAttempt>;
 };
 
 /** One bookable 15–20 minute window, as the public page sees it. */
@@ -118,5 +132,45 @@ export type PublicState = {
     waitlistCount: number;
     spotsLeft: number;
   };
+  surveyCount: number;
+  /**
+   * Whether a usable admin PIN is configured. The floating admin button is not
+   * rendered without one: an entry point to a door with no lock fitted is worse
+   * than no entry point, because it invites the guessing it cannot survive.
+   */
+  adminEnabled: boolean;
+};
+
+/** One sign-up as the admin panel shows it — contact details and all. */
+export type AdminBookingRow = {
+  slotId: string;
+  date: string;
+  start: string;
+  end: string;
+  name: string;
+  email: string;
+  organization: string;
+  /** Already turned into its label; the panel does no lookups. */
+  role: string;
+  specialty: string;
+  interests: string[];
+  topic: string;
+  code: string;
+};
+
+export type AdminVolunteerRow = {
+  name: string;
+  email: string;
+  phone: string;
+  organization: string;
+  standing: VolunteerStanding;
+  note: string;
+  code: string;
+};
+
+/** What the admin PIN buys: who signed up, and how to reach them. */
+export type AdminRoster = {
+  bookings: AdminBookingRow[];
+  volunteers: AdminVolunteerRow[];
   surveyCount: number;
 };

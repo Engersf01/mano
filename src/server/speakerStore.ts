@@ -57,6 +57,7 @@ export function emptyData(): SpeakerData {
     bookings: [],
     volunteers: [],
     surveys: [],
+    adminAttempts: {},
   };
 }
 
@@ -98,6 +99,7 @@ function hydrate(raw: unknown): SpeakerData {
     bookings: Array.isArray(doc.bookings) ? doc.bookings.map(hydrateBooking) : [],
     volunteers: Array.isArray(doc.volunteers) ? doc.volunteers : [],
     surveys: Array.isArray(doc.surveys) ? doc.surveys : [],
+    adminAttempts: { ...(doc.adminAttempts ?? {}) },
   };
 }
 

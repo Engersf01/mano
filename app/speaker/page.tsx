@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { publicState } from "@/speaker/derive";
 import { readData } from "@/server/speakerStore";
+import { adminPinConfigured } from "@/server/speakerAuth";
 import { SITE_ORIGIN } from "@/lib/site";
 import SpeakerClient from "./SpeakerClient";
 
@@ -36,6 +37,6 @@ export const dynamic = "force-dynamic";
  * round trip is the difference between "book a time" and "come back later".
  */
 export default async function SpeakerHubPage() {
-  const state = publicState(await readData());
+  const state = publicState(await readData(), adminPinConfigured());
   return <SpeakerClient initial={state} />;
 }

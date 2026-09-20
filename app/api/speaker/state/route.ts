@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { publicState } from "@/speaker/derive";
+import { adminPinConfigured } from "@/server/speakerAuth";
 import { readData } from "@/server/speakerStore";
 
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const data = await readData();
-  return NextResponse.json(publicState(data), {
+  return NextResponse.json(publicState(data, adminPinConfigured()), {
     headers: { "Cache-Control": "no-store" },
   });
 }
